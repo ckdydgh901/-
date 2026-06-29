@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArF Immersion 포토 공정 시뮬레이터</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--surface:#21262d;
+  --border:#30363d;--border2:#484f58;
+  --accent:#58a6ff;--accent2:#3fb950;--accent3:#f0883e;
+  --danger:#f85149;--warn:#e3b341;
+  --text:#e6edf3;--text2:#8b949e;--text3:#484f58;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans KR',sans-serif;
+  /* layer colors */
+  --col-si:#4a6080;--col-barc:#2da882;--col-pr:#c8902a;
+  --col-pr-exposed:#7c3aaa;--col-pr-ok:#3a8fff;
+  --col-pr-defocus:#d9663a;--col-pr-wm:#1a8cd8;
+  --col-defect:#f85149;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:300;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:0 1.5rem;height:50px;display:flex;align-items:center;justify-content:space-between;background:rgba(13,17,23,.96);flex-shrink:0}
+.logo{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.06em}
+.logo span{color:var(--text3)}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.lvl-sw{display:flex;border:1px solid var(--border2);border-radius:5px;overflow:hidden}
+.lvl-btn{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.04em;padding:4px 11px;background:transparent;color:var(--text2);border:none;cursor:pointer;transition:all .15s}
+.lvl-btn+.lvl-btn{border-left:1px solid var(--border)}
+.lvl-btn.active{background:var(--accent);color:#0d1117}
+/* APP */
+.app{display:grid;grid-template-columns:200px 1fr 256px;flex:1;overflow:hidden}
+/* LEFT */
+.left{border-right:1px solid var(--border);overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;gap:0}
+.lsec{border-bottom:1px solid var(--border);padding:10px 12px}
+.lbl{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.1em;margin-bottom:7px}
+.phase-nav{display:flex;flex-direction:column;gap:3px}
+.ph-btn{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;font-family:var(--sans);font-size:11.5px;color:var(--text2);text-align:left;width:100%;transition:all .15s}
+.ph-btn:hover{background:var(--surface);color:var(--text)}
+.ph-btn.active{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3);color:var(--accent)}
+.ph-btn.done{color:var(--accent2)}
+.ph-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background .2s}
+.ph-btn.active .ph-dot{background:var(--accent)}
+.ph-btn.done .ph-dot{background:var(--accent2)}
+/* conditions */
+.cond{font-family:var(--mono);font-size:10.5px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--border);line-height:1.5}
+.cond:last-child{border:none}
+.ck{color:var(--text3);font-size:9.5px;display:block}
+/* legend */
+.leg{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:var(--text2)}
+.leg-sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden}
+/* process flow bar */
+.proc-bar{display:flex;align-items:center;gap:0;padding:7px 14px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.proc-step{font-family:var(--mono);font-size:10px;padding:4px 9px;border-radius:4px;cursor:pointer;color:var(--text3);white-space:nowrap;transition:all .15s}
+.proc-step:hover{color:var(--text2)}
+.proc-step.active{color:var(--accent);background:rgba(88,166,255,.08)}
+.proc-step.done{color:var(--accent2)}
+.proc-arr{color:var(--text3);font-size:10px;padding:0 2px;flex-shrink:0}
+/* viewer */
+.viewer{flex:1;position:relative;overflow:hidden}
+#cv{display:block;width:100%;height:100%;cursor:grab}
+#cv:active{cursor:grabbing}
+.vctrls{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:5px}
+.vbtn{font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:4px;border:1px solid var(--border2);background:rgba(13,17,23,.85);color:var(--text2);cursor:pointer;transition:all .15s;backdrop-filter:blur(4px)}
+.vbtn:hover{border-color:var(--accent);color:var(--accent)}
+.vbtn.active{background:rgba(88,166,255,.15);border-color:var(--accent);color:var(--accent)}
+/* info bar */
+.info-bar{padding:8px 14px;border-top:1px solid var(--border);background:var(--bg2);display:flex;align-items:flex-start;gap:12px;flex-shrink:0}
+.info-title{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;padding-top:1px}
+.info-body{font-size:12px;color:var(--text2);flex:1;line-height:1.6}
+.info-body strong{color:var(--accent3)}
+.next-phase-btn{font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:5px;border:1px solid var(--accent);background:rgba(88,166,255,.1);color:var(--accent);cursor:pointer;flex-shrink:0;transition:all .15s}
+.next-phase-btn:hover{background:rgba(88,166,255,.2)}
+/* sliders */
+.slider-bar{padding:7px 14px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.sr{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.sr:last-child{margin-bottom:0}
+.slbl{font-family:var(--mono);font-size:10px;color:var(--text3);width:105px;flex-shrink:0;letter-spacing:.04em}
+.sli{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--surface);outline:none;cursor:pointer}
+.sli::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent)}
+.sval{font-family:var(--mono);font-size:11px;color:var(--accent);width:52px;text-align:right;flex-shrink:0}
+/* RIGHT */
+.right{border-left:1px solid var(--border);overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column}
+.rsec{padding:12px;border-bottom:1px solid var(--border)}
+/* clues */
+.clue-item{display:flex;align-items:flex-start;gap:8px;padding:6px 9px;border-radius:5px;border:1px solid var(--border);background:transparent;cursor:pointer;margin-bottom:4px;font-family:var(--sans);width:100%;text-align:left;transition:all .15s}
+.clue-item:hover{border-color:var(--accent2);background:rgba(63,185,80,.05)}
+.clue-item.done{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.35)}
+.cn{width:17px;height:17px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);color:var(--text2);font-family:var(--mono);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.clue-item.done .cn{background:var(--accent2);border-color:var(--accent2);color:#0d1117}
+.ct{font-size:11.5px;color:var(--text);line-height:1.4;flex:1}
+.cc{font-size:12px;color:var(--accent2);opacity:0;transition:opacity .15s;flex-shrink:0}
+.clue-item.done .cc{opacity:1}
+.ccount{font-family:var(--mono);font-size:10px;color:var(--accent2);text-align:right;margin-top:3px;margin-bottom:8px}
+/* stepbar */
+.stepbar{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px}
+.spill{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);color:var(--text3);background:transparent;white-space:nowrap}
+.spill.on{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.08)}
+.spill.done{color:var(--accent2);border-color:rgba(63,185,80,.4)}
+.qq{font-size:12px;color:var(--text2);margin-bottom:9px;line-height:1.7;font-family:var(--mono)}
+.stag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--accent);background:rgba(88,166,255,.1);padding:2px 6px;border-radius:3px;margin-right:7px;vertical-align:middle}
+.choice{padding:8px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11.5px;cursor:pointer;text-align:left;width:100%;margin-bottom:4px;transition:all .15s;line-height:1.5;font-family:var(--sans);font-weight:300}
+.choice:hover:not(:disabled){background:var(--surface);color:var(--text);border-color:var(--border2)}
+.choice.correct{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.4);color:var(--accent2)}
+.choice.wrong{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.35);color:var(--danger)}
+.choice:disabled{cursor:default}
+.fb{margin-top:7px;padding:9px 11px;border-radius:5px;font-size:12px;line-height:1.75;display:none;white-space:pre-wrap}
+.fb.show{display:block}
+.fb.ok{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);color:var(--accent2)}
+.fb.ng{background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.25);color:var(--danger)}
+/* text mode */
+.kwhint{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.kwc{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface);border:1px dashed var(--border2);color:var(--text2)}
+.ta{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:12px;line-height:1.5;resize:vertical;min-height:65px}
+.ta:focus{outline:none;border-color:var(--accent)}
+.actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.abtn{font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:4px;border:1px solid var(--accent2);background:rgba(63,185,80,.08);color:var(--accent2);cursor:pointer;transition:all .15s}
+.abtn:hover:not(:disabled){background:rgba(63,185,80,.18)}
+.abtn:disabled{opacity:.4;cursor:default}
+.abtn.ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+.abtn.ghost:hover{background:var(--surface)}
+.ma{display:none;margin-top:8px;padding:9px 11px;border-radius:6px;background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.2);border-left:3px solid var(--accent2);font-size:11.5px;line-height:1.6;color:var(--text)}
+.ma.show{display:block}
+.sm{display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap}
+.smlbl{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.mbtn{font-family:var(--mono);font-size:11px;font-weight:600;padding:4px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border2);background:transparent;transition:all .15s}
+.mbtn.ok{color:var(--accent2);border-color:rgba(63,185,80,.4)}
+.mbtn.ok:hover{background:rgba(63,185,80,.1)}
+.mbtn.no{color:var(--danger);border-color:rgba(248,81,73,.4)}
+.mbtn.no:hover{background:rgba(248,81,73,.08)}
+/* hints */
+.hwrap{margin-top:9px}
+.hbtn{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 11px;border-radius:4px;cursor:pointer;border:1px solid rgba(227,179,65,.4);background:transparent;color:var(--warn);transition:all .15s}
+.hbtn:hover{background:rgba(227,179,65,.08)}
+.hbtn:disabled{opacity:.4;cursor:default}
+.hout{margin-top:6px;display:flex;flex-direction:column;gap:5px}
+.hi{font-size:11.5px;line-height:1.55;padding:7px 10px;border-radius:5px;background:rgba(227,179,65,.07);border:1px solid rgba(227,179,65,.2);color:var(--text)}
+.hi b{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--warn);display:block;margin-bottom:2px}
+/* next/score */
+.nbtn{margin-top:7px;font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;display:none}
+.nbtn.show{display:inline-block}
+.nbtn:hover{background:var(--surface);color:var(--text)}
+/* formula */
+.fbox{margin:9px 0;padding:7px 10px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.2);border-left:3px solid var(--accent);border-radius:0 5px 5px 0;font-family:var(--mono);font-size:10.5px;color:var(--text);line-height:1.7}
+.fbox .fk{color:var(--text3);font-size:9px;display:block;margin-bottom:2px;letter-spacing:.08em}
+/* bossung */
+.bpanel{padding:9px 11px;border-bottom:1px solid var(--border)}
+.btitle{font-family:var(--mono);font-size:9.5px;color:var(--text3);letter-spacing:.08em;margin-bottom:5px}
+/* chat */
+.chat-sec{padding:10px 12px;flex:1;display:flex;flex-direction:column}
+.clog{max-height:160px;overflow-y:auto;margin:5px 0 7px;display:flex;flex-direction:column;gap:6px}
+.cempty{font-size:11px;color:var(--text3);font-family:var(--mono);padding:5px 0}
+.cmsg{font-size:11.5px;line-height:1.55;padding:6px 9px;border-radius:6px;max-width:88%;white-space:pre-wrap;word-break:break-word}
+.cmsg.user{align-self:flex-end;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2)}
+.cmsg.assistant{align-self:flex-start;background:var(--surface);border:1px solid var(--border)}
+.cwho{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:var(--text3);margin-bottom:2px}
+.crow{display:flex;gap:6px}
+.cinp{flex:1;padding:6px 9px;border-radius:5px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:12px}
+.cinp:focus{outline:none;border-color:var(--accent)}
+.csend{font-family:var(--mono);font-size:11px;padding:6px 11px;border-radius:4px;border:1px solid var(--accent);background:rgba(88,166,255,.1);color:var(--accent);cursor:pointer;transition:all .15s;white-space:nowrap}
+.csend:hover{background:rgba(88,166,255,.2)}
+.note-out{display:none;margin-top:9px;padding:10px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:360px;overflow-y:auto}
+.note-out.show{display:block}
+.ail{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.05em}
+/* score */
+.score-sc{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(13,17,23,.92);backdrop-filter:blur(8px)}
+.score-sc.show{display:flex}
+.score-card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:2.2rem;max-width:400px;width:100%;text-align:center}
+.sbig{font-family:var(--mono);font-size:54px;color:var(--accent);font-weight:600;line-height:1;margin-bottom:7px}
+.ssub{font-size:13px;color:var(--text2);margin-bottom:1.6rem}
+.rbtn{font-family:var(--mono);font-size:12px;padding:8px 22px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.rbtn:hover{background:var(--surface);color:var(--text)}
+/* start */
+.start-sc{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.93);backdrop-filter:blur(8px);padding:1.5rem}
+.start-sc.show{display:flex}
+.start-card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:2rem;max-width:600px;width:100%;text-align:center}
+.seyebrow{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--accent);margin-bottom:9px}
+.stitle{font-size:19px;font-weight:700;color:var(--text);margin-bottom:7px}
+.sdesc{font-size:13px;color:var(--text2);margin-bottom:1.4rem;line-height:1.6}
+.slevels{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.slvl{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px 10px;cursor:pointer;transition:all .15s;text-align:center}
+.slvl:hover{border-color:var(--accent);background:rgba(88,166,255,.06);transform:translateY(-2px)}
+.slname{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
+.sldesc{font-size:11px;color:var(--text2);line-height:1.6}
+/* progress */
+.prog{height:2px;background:var(--border);flex-shrink:0}
+.pfill{height:100%;background:var(--accent);transition:width .4s}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+/* observe guide */
+.observe-guide{font-size:11px;color:var(--text2);margin-bottom:7px;line-height:1.5}
+/* situation */
+.situation-text{font-size:12px;color:var(--text2);line-height:1.75}
+/* ai intro */
+.ai-intro{font-size:11.5px;color:var(--text2);line-height:1.6;margin-bottom:8px}
+/* step arrow in stepbar */
+.step-arrow{color:var(--text3);font-size:9px;padding:0 1px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">SEMI<span>_</span>LAB <span>// ArF Immersion Photo Process</span></div>
+  <div class="hdr-right">
+    <div class="lvl-sw">
+      <button class="lvl-btn active" data-lvl="beginner">초급</button>
+      <button class="lvl-btn" data-lvl="intermediate">중급</button>
+      <button class="lvl-btn" data-lvl="advanced">고급</button>
+    </div>
+  </div>
+</header>
+
+<div class="start-sc show" id="startSc">
+  <div class="start-card">
+    <div class="seyebrow">AX 인터랙티브 콘텐츠 공모전 · ArF Immersion 포토 공정</div>
+    <div class="stitle">공정을 단계별로 경험하고, 결함을 분석하세요</div>
+    <div class="sdesc">
+      코팅 → 노광 → PEB → 현상 전 과정을 3D로 직접 경험합니다.<br>
+      <strong>Positive PR의 핵심 — 노광 영역이 현상 시 제거</strong>되는 과정을 눈으로 확인하고,<br>
+      <strong>DOF 이탈 + Watermark</strong> 복합 결함의 원인을 추론합니다.
+    </div>
+    <div class="slevels">
+      <button class="slvl" data-lvl="beginner"><div class="slname">초급</div><div class="sldesc">객관식 · 보기 제공<br>빈칸 채우기 형식</div></button>
+      <button class="slvl" data-lvl="intermediate"><div class="slname">중급</div><div class="sldesc">서술형 · 키워드 힌트<br>직접 작성 후 자가채점</div></button>
+      <button class="slvl" data-lvl="advanced"><div class="slname">고급</div><div class="sldesc">완전 주관식 · 힌트 없음<br>가설검증 AI 피드백</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="lsec">
+      <div class="lbl">PHASE NAVIGATION</div>
+      <div class="phase-nav" id="phaseNav">
+        <button class="ph-btn active" data-p="0"><span class="ph-dot"></span>① 코팅 (Spin Coat)</button>
+        <button class="ph-btn" data-p="1"><span class="ph-dot"></span>② Soft Bake</button>
+        <button class="ph-btn" data-p="2"><span class="ph-dot"></span>③ ArF 노광</button>
+        <button class="ph-btn" data-p="3"><span class="ph-dot"></span>④ PEB</button>
+        <button class="ph-btn" data-p="4"><span class="ph-dot"></span>⑤ 현상</button>
+        <button class="ph-btn" data-p="5"><span class="ph-dot"></span>⑥ 결함 분석</button>
+      </div>
+    </div>
+    <div class="lsec">
+      <div class="lbl">PROCESS CONDITIONS</div>
+      <div class="cond"><span class="ck">공정</span>ArF Immersion</div>
+      <div class="cond"><span class="ck">파장 / NA</span>193 nm / 1.32</div>
+      <div class="cond"><span class="ck">침지 매질</span>DI water (n≈1.44)</div>
+      <div class="cond"><span class="ck">PR 종류</span>Positive CAR, 90 nm</div>
+      <div class="cond"><span class="ck">하부막</span>SiO₂ (절연막, ~30 nm)</div>
+      <div class="cond"><span class="ck">BARC</span>Si-BARC 적용</div>
+      <div class="cond"><span class="ck">웨이퍼 단차</span>CMP 잔여 ~30 nm</div>
+      <div class="cond"><span class="ck">Focus Offset</span><span id="focusCondVal" style="color:var(--danger)">+65 nm (이탈)</span></div>
+    </div>
+    <div class="lsec">
+      <div class="lbl">LAYER LEGEND</div>
+      <div class="leg"><div class="leg-sw" style="background:#4a6080"></div>Si 기판 (웨이퍼)</div>
+      <div class="leg"><div class="leg-sw" style="background:#d4e8f5;border:1px solid #aac"></div>SiO₂ (절연막)</div>
+      <div class="leg"><div class="leg-sw" style="background:#2da882"></div>Si-BARC (반사방지막)</div>
+      <div class="leg"><div class="leg-sw" style="background:#c8902a"></div>PR — 미노광 (남는 부분)</div>
+      <div class="leg"><div class="leg-sw" style="background:#7c3aaa"></div>PR — 노광 영역 (제거됨)</div>
+      <div class="leg"><div class="leg-sw" style="background:#3a8fff"></div>PR — 정상 패턴</div>
+      <div class="leg"><div class="leg-sw" style="background:#d9663a"></div>PR — DOF 이탈 결함</div>
+      <div class="leg"><div class="leg-sw" style="background:#1a8cd8"></div>PR — Watermark 결함</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="proc-bar" id="procBar">
+      <div class="proc-step active" data-p="0">COAT</div><div class="proc-arr">›</div>
+      <div class="proc-step" data-p="1">S.BAKE</div><div class="proc-arr">›</div>
+      <div class="proc-step" data-p="2">EXPOSE</div><div class="proc-arr">›</div>
+      <div class="proc-step" data-p="3">PEB</div><div class="proc-arr">›</div>
+      <div class="proc-step" data-p="4">DEVELOP</div><div class="proc-arr">›</div>
+      <div class="proc-step" data-p="5" style="color:var(--danger)">DEFECT ANALYSIS</div>
+    </div>
+    <div class="prog"><div class="pfill" id="pfill" style="width:0%"></div></div>
+    <div class="viewer">
+      <canvas id="cv"></canvas>
+      <div class="vctrls">
+        <button class="vbtn" id="resetBtn">RESET</button>
+        <button class="vbtn active" id="rotBtn">AUTO ROT</button>
+        <button class="vbtn" id="xrayBtn">X-RAY</button>
+      </div>
+    </div>
+    <div class="info-bar" id="infoBar">
+      <div class="info-title" id="infoTitle">① COATING</div>
+      <div class="info-body" id="infoBody">PR이 웨이퍼 위로 도포됩니다.</div>
+      <button class="next-phase-btn" id="nextPhaseBtn">다음 단계 →</button>
+    </div>
+    <div class="slider-bar" id="sliderBar" style="display:none">
+      <div class="sr">
+        <span class="slbl">FOCUS OFFSET</span>
+        <input type="range" class="sli" id="focusSli" min="-120" max="120" value="65">
+        <span class="sval" id="focusVal">+65 nm</span>
+      </div>
+      <div class="sr">
+        <span class="slbl">PR 소수성 (접촉각)</span>
+        <input type="range" class="sli" id="hydSli" min="10" max="90" value="45">
+        <span class="sval" id="hydVal">45°</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <!-- 관찰 포인트 -->
+    <div class="rsec" id="cluesSec" style="display:none">
+      <div class="lbl" style="margin-bottom:6px">관찰 포인트 · VISUAL CLUES</div>
+      <div class="observe-guide">3D를 돌려가며 아래 이상 징후를 직접 찾아보세요.</div>
+      <div id="cluesEl"></div>
+      <div class="ccount" id="ccountEl">0 / 0 확인</div>
+    </div>
+    <!-- SITUATION -->
+    <div class="rsec" id="situationSec" style="display:none">
+      <div class="lbl" style="margin-bottom:6px">SITUATION</div>
+      <div class="situation-text" id="situationText"></div>
+    </div>
+    <!-- TROUBLESHOOTING -->
+    <div class="rsec" id="quizSec" style="display:none;flex-direction:column">
+      <div class="lbl" style="margin-bottom:7px">TROUBLESHOOTING</div>
+      <div class="stepbar" id="stepBar"></div>
+      <div class="qq" id="qqEl"></div>
+      <div id="choicesEl"></div>
+      <div id="textEl" style="display:none">
+        <div class="kwhint" id="kwEl"></div>
+        <textarea class="ta" id="taEl" rows="3" placeholder="여기에 답을 서술해 보세요..."></textarea>
+        <div class="actions">
+          <button class="abtn" id="aiBtn">가설 검증 ▸</button>
+          <button class="abtn ghost" id="revealBtn">모범답안 ▸</button>
+        </div>
+        <div class="ma" id="maEl"></div>
+        <div class="sm" id="smEl" style="display:none">
+          <span class="smlbl">스스로 채점:</span>
+          <button class="mbtn ok" id="mRight">맞음</button>
+          <button class="mbtn no" id="mWrong">아쉬움</button>
+        </div>
+      </div>
+      <div class="fb" id="fbEl"></div>
+      <div class="hwrap">
+        <button class="hbtn" id="hintBtn">▸ 힌트</button>
+        <div class="hout" id="houtEl"></div>
+      </div>
+      <button class="nbtn" id="stepNextBtn">다음 단계 →</button>
+      <button class="nbtn" id="finBtn">NEXT CASE →</button>
+    </div>
+    <!-- KEY FORMULA -->
+    <div class="rsec" id="formulaSec" style="display:none">
+      <div class="fbox">
+        <span class="fk">KEY FORMULA</span>
+        DOF = k₂·λ/NA² = 0.745×193/(1.32)² ≈ <b style="color:var(--accent)">82 nm</b><br>
+        <span style="color:var(--text2);font-size:10px">단차 30 nm = DOF 마진의 37% 소모</span>
+      </div>
+    </div>
+    <!-- BOSSUNG -->
+    <div class="bpanel">
+      <div class="btitle">BOSSUNG CURVE (CD vs Focus)</div>
+      <canvas id="boscv" width="232" height="105"></canvas>
+    </div>
+    <!-- AI ASSIST -->
+    <div class="rsec" id="askPanel" style="display:none">
+      <div class="lbl" style="margin-bottom:6px">AI_ASSIST · 무엇이든 질문</div>
+      <div class="ai-intro">막히는 부분이 있으면 바로 물어보세요. <b>정답을 통째로 알려주기보다</b> 이해를 돕는 방향으로 안내합니다.</div>
+      <div class="clog" id="clog"><div class="cempty">공정 원리나 결함에 대해 물어보세요.</div></div>
+      <div class="crow">
+        <input type="text" class="cinp" id="cinp" placeholder="예: DOF 이탈 시 왜 테이퍼가 생기나요?">
+        <button class="csend" id="csend">전송</button>
+      </div>
+    </div>
+    <!-- MY NOTE -->
+    <div class="rsec" id="notePanel" style="display:none">
+      <div class="lbl" style="margin-bottom:6px">MY_NOTE · AI 학습 노트</div>
+      <div class="ai-intro">이 트러블슈팅에서의 <b>당신의 사고 흐름과 질문</b>을 바탕으로, 나만의 결함 분석 트리와 핵심 개념 요약 노트를 만들어 드립니다.</div>
+      <button class="abtn" id="noteBtn" style="width:100%">▸ 내 분석 노트 생성</button>
+      <div class="note-out" id="noteOut"></div>
+    </div>
+  </div>
+</div>
+
+<div class="score-sc" id="scoreSc">
+  <div class="score-card">
+    <div class="sbig" id="scoreBig"></div>
+    <div class="ssub" id="scoreSub"></div>
+    <button class="rbtn" onclick="restartAll()">RESTART</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// ═══ CASE DATA (참조 파일 패턴: typeQ→equipQ→causeQ→solutionQ) ═══
+const CASE = {
+  tag: 'ArF Immersion · 복합 결함',
+  title: 'Watermark + DOF 이탈 복합 결함',
+  situation: `단면 SEM 관찰 결과 <b>두 가지 결함이 동시에 확인</b>됨.<br>
+① 일부 PR 라인: 상단 라운딩 + 측벽 테이퍼 + Footing — 수직 측벽 대비 CD 편차 약 12 nm<br>
+② PR 표면 일부: 국소 변색 + 현상 후 CD 변동 — Watermark 의심<br>
+동일 웨이퍼 내 일부 영역은 정상, 일부는 결함. <b>CDU(CD Uniformity)가 크게 증가</b>함.`,
+  clues:[
+    '일부 PR만 테이퍼+라운딩+Footing — 위치에 따른 불균일 (단차 의심)',
+    '테이퍼 형상: 상단 CD < 바닥 CD (초점 이탈 = 공중상 대비 저하)',
+    'PR 표면 국소 얼룩 — Watermark (침지 매질 잔류)',
+    '동일 웨이퍼 내 CDU 급증 (NA=1.32 → DOF≈82nm, 단차 30nm가 37% 소모)',
+    'Bossung 곡선에서 현재 Focus가 DOF 바깥에 위치',
+  ],
+  hints:{
+    mechanism: '초점심도(DOF) 이탈, 웨이퍼 단차, 공중상 대비 저하, PR 소수성 부족, 침지 매질 잔류',
+    field: 'ArF immersion NA>1.2 공정에서 CMP 잔여 단차 + Topcoat 미적용 PR 조합 시 발생. N5/N3 BEOL 메탈 레이어',
+  },
+  commonErrors:[
+    {wrong:'현상 시간 부족 때문이다',rebut:'현상 부족이면 Scum(잔막)이 남습니다. 테이퍼+라운딩은 "공중상 흐림"의 고유 프로파일로 현상 조건만으로 재현되지 않습니다.'},
+    {wrong:'NA가 너무 커서 해상도가 지나치게 높아진 것이다',rebut:'NA 증가는 해상도를 높이지만 DOF를 좁힙니다. 문제는 좁아진 DOF 안에 웨이퍼 단차가 포함된 것입니다.'},
+    {wrong:'BARC 반사로 정재파가 생긴 것이다',rebut:'정재파라면 측벽에 주기적 물결이 보여야 합니다. 여기서 측벽은 경사진(테이퍼) 형태로, 공중상 대비 저하의 증거입니다.'},
+  ],
+  typeQ:{
+    q:'Positive PR 단면 SEM에서 일부 라인: 상단 라운딩+측벽 테이퍼+Footing, 다른 라인: PR 표면 얼룩+두께 감소. 이 복합 결함과 관련된 공정 단계는?',
+    choices:[
+      {text:'노광 초점 이탈(DOF 초과)과 침지 매질 잔류(Watermark) — 노광 단계의 두 문제',correct:true},
+      {text:'현상 시간 과다 + 린스액 불량 — 현상 단계 단독 문제',correct:false},
+      {text:'BARC 반사율 과다 + PEB 온도 저하',correct:false},
+      {text:'마스크 CD 오류 + 스캐너 배율 오차',correct:false},
+    ],
+    ok:'정확합니다. Positive PR에서 노광 영역은 PEB 후 현상 시 제거됩니다. DOF 이탈 영역에서는 공중상 대비가 떨어져 노광 경계가 흐릿해지고, 측벽이 테이퍼+라운딩+Footing 형태가 됩니다. Watermark는 PR 소수성 부족으로 침지 매질이 흡착·잔류한 결과입니다.',
+    no:'힌트: Positive PR은 "노광된 부분이 현상 시 제거"됩니다. 측벽 테이퍼·라운딩·Footing은 노광/미노광 경계가 선명하지 않을 때 나타납니다. 어느 공정에서 이 경계 선명도가 결정될까요?',
+  },
+  equipQ:{
+    q:'DOF 이탈 정도를 정량화하고 Watermark로 인한 CD 변동을 구별하기 위한 계측 조합은?',
+    choices:[
+      {text:'CD-SEM (FEM으로 Bossung 곡선 도출) + 접촉각 측정기 (PR 소수성 확인)',correct:true},
+      {text:'XRD (결정성 분석) + 4점 탐침 (면저항 측정)',correct:false},
+      {text:'AFM (표면 거칠기) + 엘립소미터 (막 두께)',correct:false},
+      {text:'TEM (단면 나노구조) + SIMS (불순물 깊이 프로파일)',correct:false},
+    ],
+    ok:'CD-SEM으로 포커스 오프셋별 CD 변화를 측정해 Bossung 곡선을 도출하면 DOF 마진을 정량화할 수 있습니다. 접촉각 측정기로 PR 소수성이 설계값(>70°) 이하인지 확인하면 Watermark 취약성을 진단합니다.',
+    no:'XRD·4점 탐침은 결정성·전기저항 측정용입니다. DOF 정량화와 Watermark 진단에는 CD-SEM(FEM)과 접촉각 측정기 조합이 적합합니다.',
+  },
+  causeQ:'이 복합 결함(DOF 이탈 + Watermark)의 가장 정확한 발생 원인 조합은?',
+  choices:[
+    {text:'웨이퍼 단차(~30nm)로 인한 국소 DOF 초과 + PR 소수성 부족으로 침지 매질 흡착·잔류',correct:true},
+    {text:'NA 부족으로 해상도 불충분, 현상액 농도가 낮아 PR이 미용해됨',correct:false},
+    {text:'PEB 온도 과다로 산 과확산, 스핀 코팅 불안정으로 PR 두께 불균일',correct:false},
+    {text:'BARC 반사율 높아 정재파 형성, 마스크 CD 오차로 패턴 크기 변화',correct:false},
+  ],
+  feedbackOK:'DOF=k₂·λ/NA²=82nm인 상황에서 웨이퍼 단차 30nm가 마진의 37%를 소모해 국소 초점 이탈이 발생합니다. 동시에 PR 접촉각 45°(설계 >70°)로 소수성이 부족해 침지 매질이 PR 표면에 흡착·잔류하여 Watermark가 생깁니다. 두 원인이 시너지를 만드는 복합 결함입니다.',
+  feedbackNo:'힌트: Bossung 곡선에서 현재 Focus 위치가 DOF 바깥에 있음을 확인하세요. 그리고 ArF 액침 공정에서 PR 표면이 물(침지 매질)과 직접 접촉한다는 점을 고려하세요.',
+  solutionQ:{
+    q:'DOF 이탈과 Watermark를 동시에 개선하는 가장 효과적인 처방 조합은?',
+    choices:[
+      {text:'CMP로 웨이퍼 단차 최소화 + 소수성 Topcoat 적용 + Bossung 윈도우 내 포커스 운용',correct:true},
+      {text:'NA를 더 높여 해상도 향상 + 현상 시간 단축',correct:false},
+      {text:'PEB 온도 낮추어 산 확산 억제 + BARC 제거',correct:false},
+      {text:'PR 두께 2배 증가 + 노광량(Dose) 감소',correct:false},
+    ],
+    ok:'CMP로 단차를 줄이면 DOF 마진이 확보되고, 소수성 Topcoat은 침지 매질이 PR에 닿지 않도록 차단합니다. Bossung 윈도우 중심에서 운용하면 Focus 이탈 리스크가 최소화됩니다.',
+    no:'NA 증가는 DOF를 더 좁힙니다. PEB 온도 저하·BARC 제거·두께 증가는 단차와 소수성이라는 근본 원인을 해결하지 못합니다.',
+  },
+};
+
+// ═══ THREE.JS SETUP ═══
+const cv=document.getElementById('cv');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x0d1117,1);
+renderer.shadowMap.enabled=true;
+const scene=new THREE.Scene();
+// fog 제거 — 줌아웃 시 어두워지는 문제 방지
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+camera.position.set(6,4,9);
+camera.lookAt(0,0.5,0);
+
+// Lights
+scene.add(new THREE.AmbientLight(0x8899bb,0.65));
+const dl1=new THREE.DirectionalLight(0xffffff,0.85);dl1.position.set(7,11,6);dl1.castShadow=true;scene.add(dl1);
+const dl2=new THREE.DirectionalLight(0x4488cc,0.35);dl2.position.set(-5,3,-4);scene.add(dl2);
+
+function resize(){
+  const w=cv.clientWidth,h=cv.clientHeight;
+  if(cv.width!==w||cv.height!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+}
+
+// helpers
+function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t))}
+function num(v){return(typeof v==='number'&&!isNaN(v))?v:0.5}
+function mat(hex,op=1,r=0.55,m=0){
+  return new THREE.MeshStandardMaterial({color:hex,transparent:op<1,opacity:op,roughness:r,metalness:m,side:THREE.DoubleSide});
+}
+function makeWaferTex(){
+  const sz=512;const c=document.createElement('canvas');c.width=c.height=sz;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(sz/2,sz/2,0,sz/2,sz/2,sz/2);
+  g.addColorStop(0,'#4a5568');g.addColorStop(0.65,'#3a4558');g.addColorStop(1,'#2a3545');
+  ctx.fillStyle=g;ctx.fillRect(0,0,sz,sz);
+  // 다이 격자
+  ctx.strokeStyle='rgba(100,130,165,0.22)';ctx.lineWidth=0.7;
+  for(let i=0;i<sz;i+=28){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,sz);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(sz,i);ctx.stroke();}
+  ctx.strokeStyle='rgba(120,160,200,0.16)';ctx.lineWidth=1.8;
+  for(let i=0;i<sz;i+=112){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,sz);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(sz,i);ctx.stroke();}
+  return new THREE.CanvasTexture(c);
+}
+const waferTex=makeWaferTex();
+
+// ══════════════════════════════════════════════════
+// 좌표 체계 (모든 geometry는 Y축 기준으로 쌓임)
+// grp 전체를 X축으로 살짝 기울여서 비스듬히 보이게 함
+// 웨이퍼는 XZ평면에 눕힘 → CylinderGeometry rotation 없음
+//
+// Y축 좌표 (아래 → 위):
+//  웨이퍼 바닥: Y = 0.0
+//  웨이퍼 윗면: Y = 0.2   (두께 0.2)
+//  BARC 윗면:   Y = 0.34  (두께 0.14)
+//  PR 시작:     Y = 0.34  = BASE_Y
+//  PR 윗면:     Y = 1.04  (두께 0.70)
+//  마스크:      Y = 3.0   (위쪽 공간)
+//  렌즈:        Y = 2.2
+// ══════════════════════════════════════════════════
+
+const WAFER_Y   = 0.10;   // 웨이퍼 center Y (두께 0.2 → 바닥 0, 윗면 0.2)
+const WAFER_TOP = 0.20;   // 웨이퍼 윗면
+const SIO2_H    = 0.28;   // SiO₂ 절연막 두께 (BARC_H의 2배 — 시각적 구분)
+const SIO2_TOP  = WAFER_TOP + SIO2_H;   // 0.48
+const BARC_H    = 0.14;
+const BARC_TOP  = SIO2_TOP + BARC_H;    // 0.62  ← SiO₂ 위로 밀림
+const BASE_Y    = BARC_TOP;             // PR 시작 Y = 0.62
+const PR_H      = 0.70;
+const PR_TOP    = BASE_Y + PR_H;        // 1.32
+const MASK_Y    = 3.60;   // 마스크도 위로 조정
+const LENS_Y    = 2.70;
+
+const MASK_POS  = [-2.2, 0.0, 2.2];   // 차광(Cr) X 위치 → 그 아래 PR이 남음
+const LINE_W    = 0.72;
+
+function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t));}
+function num(v){return(typeof v==='number'&&!isNaN(v))?v:0.5;}
+
+function mat(hex,op=1,rough=0.55,metal=0){
+  return new THREE.MeshStandardMaterial({
+    color:hex,transparent:op<1,opacity:op,
+    roughness:rough,metalness:metal,side:THREE.DoubleSide
+  });
+}
+
+const grp = new THREE.Group();
+scene.add(grp);
+function clearGrp(){while(grp.children.length)grp.remove(grp.children[0]);}
+
+// Box helper: x,y,z = center 좌표
+function addBox(w,h,d, cx,cy,cz, material){
+  const geo = new THREE.BoxGeometry(w,h,d);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.set(cx, cy, cz);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  grp.add(mesh);
+  const edge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:0x000000, transparent:true, opacity:0.1})
+  );
+  edge.position.copy(mesh.position);
+  grp.add(edge);
+  return mesh;
+}
+
+// Disk (flat cylinder) helper: y = center Y
+function addDisk(r, h, cy, material, rotX=0){
+  const geo = new THREE.CylinderGeometry(r,r,h,64);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.set(0, cy, 0);
+  mesh.rotation.x = rotX; // 0 = 수직으로 세워짐 (Y축 기준) → 웨이퍼처럼 수평
+  // CylinderGeometry 기본: Y축 방향 높이 → 이미 수평 웨이퍼에 맞음
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  grp.add(mesh);
+  return mesh;
+}
+
+function addDome(rx,ry,rz, cx,cy,cz, hex, op){
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(1,20,14),
+    mat(hex,op)
+  );
+  m.scale.set(rx,ry,rz);
+  m.position.set(cx,cy,cz);
+  m.castShadow = true;
+  grp.add(m);
+  return m;
+}
+
+function addCone(r,h, cx,cy,cz, hex, ry=0){
+  // ry: Y축 회전 (수직 화살표는 ry=0, 수평 화살표는 rotation.z)
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r,h,10), mat(hex,0.9));
+  m.position.set(cx,cy,cz);
+  m.rotation.y = ry;
+  grp.add(m);
+}
+function addArrowDown(cx,cy,cz,hex){ // 아래 방향 화살표 (결함 마커)
+  const m=new THREE.Mesh(new THREE.ConeGeometry(0.08,0.22,10),mat(hex,0.9));
+  m.position.set(cx,cy,cz);
+  m.rotation.z=Math.PI; // 아래를 가리킴
+  grp.add(m);
+}
+function addArrowUp(cx,cy,cz,hex){ // 위 방향 화살표 (정상 마커)
+  const m=new THREE.Mesh(new THREE.ConeGeometry(0.08,0.22,10),mat(hex,0.9));
+  m.position.set(cx,cy,cz);
+  // 기본이 위를 가리킴
+  grp.add(m);
+}
+
+// 웨이퍼 + BARC 공통 레이어
+function addWaferAndBARC(xr){
+  // Si 웨이퍼 디스크 (Y축 기준 CylinderGeometry → 수평으로 놓임)
+  const waferMat = new THREE.MeshStandardMaterial({
+    map:waferTex, roughness:0.55, metalness:0.12,
+    transparent:xr, opacity:xr?0.22:1
+  });
+  const wafer = new THREE.Mesh(new THREE.CylinderGeometry(7.0,7.0,0.2,64), waferMat);
+  wafer.position.set(0, WAFER_Y, 0); // center = 0.1, 바닥=0, 윗면=0.2
+  wafer.castShadow=true; wafer.receiveShadow=true;
+  grp.add(wafer);
+
+  // 엣지 링
+  const edge = new THREE.Mesh(
+    new THREE.TorusGeometry(7.0,0.035,8,64),
+    new THREE.MeshStandardMaterial({color:0x88aacc,roughness:0.2,metalness:0.55})
+  );
+  edge.position.set(0, WAFER_TOP, 0);
+  edge.rotation.x = Math.PI/2; // 수평으로 눕힘
+  grp.add(edge);
+
+  // 플랫 노치
+  const notch = new THREE.Mesh(
+    new THREE.BoxGeometry(0.25,0.15,0.08),
+    new THREE.MeshStandardMaterial({color:0x1a2535})
+  );
+  notch.position.set(0, WAFER_Y, 7.02);
+  grp.add(notch);
+
+  // SiO₂ 절연막 (웨이퍼 윗면 위 — 식각 대상막)
+  const sio2Mat = new THREE.MeshStandardMaterial({
+    color:0xd4e8f5,          // 연한 하늘색 (SiO₂ 특유의 투명한 느낌)
+    transparent:true,
+    opacity:xr?0.12:0.82,
+    roughness:0.25,
+    metalness:0.0,
+    side:THREE.DoubleSide
+  });
+  const sio2 = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.92,6.92, SIO2_H, 64),
+    sio2Mat
+  );
+  sio2.position.set(0, WAFER_TOP + SIO2_H/2, 0); // center = 0.34
+  sio2.castShadow=true;
+  grp.add(sio2);
+
+  // BARC 레이어 (SiO₂ 위)
+  const barcMat = mat(0x2da882, xr?0.15:0.90, 0.4);
+  const barc = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.9,6.9, BARC_H, 64),
+    barcMat
+  );
+  barc.position.set(0, SIO2_TOP + BARC_H/2, 0); // center = 0.55
+  barc.castShadow=true;
+  grp.add(barc);
+}
+
+// ══ Phase 0: Spin Coat ══
+function buildPhase0(xr){
+  clearGrp(); addWaferAndBARC(xr);
+  // PR 전면 코팅 디스크 (BARC 위)
+  const pr = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.85,6.85, PR_H, 64),
+    mat(0xc8902a, xr?0.12:0.88, 0.45)
+  );
+  pr.position.set(0, BARC_TOP + PR_H/2, 0);
+  pr.castShadow=true; grp.add(pr);
+  // Edge bead
+  const eb = new THREE.Mesh(
+    new THREE.TorusGeometry(6.85,0.055,8,64),
+    mat(0xc8902a, xr?0.08:0.65, 0.3)
+  );
+  eb.position.set(0, BARC_TOP + PR_H, 0);
+  eb.rotation.x = Math.PI/2;
+  grp.add(eb);
+}
+
+// ══ Phase 1: Soft Bake ══
+function buildPhase1(xr){
+  clearGrp(); addWaferAndBARC(xr);
+  const pr = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.85,6.85, PR_H*0.72, 64),
+    mat(0xc8902a, xr?0.12:0.90, 0.50)
+  );
+  pr.position.set(0, BASE_Y + PR_H*0.72/2, 0);
+  pr.castShadow=true; grp.add(pr);
+}
+
+// ══ Phase 2: ArF Exposure ══
+// 핵심: Cr 차광부 아래 = 미노광(갈색), 투명부 아래 = 노광(보라)
+// 렌즈/광선 시각화 제거 — 마스크 패턴과 PR 노광 영역 구분에 집중
+function buildPhase2(xr, fOff){
+  clearGrp(); addWaferAndBARC(xr);
+  const fSev = Math.abs(fOff)/120;
+
+  // ── 마스크: 석영 유리 베이스 ──
+  const glassM = new THREE.MeshStandardMaterial({color:0xaaccee,transparent:true,opacity:0.28,roughness:0.05});
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(8.5,0.10,2.8), glassM);
+  glass.position.set(0, MASK_Y, 0); grp.add(glass);
+  // Cr 차광부 (불투명 검정) — 이 아래 PR이 미노광 → 현상 후 남음
+  MASK_POS.forEach(mx=>{
+    const cr = new THREE.Mesh(
+      new THREE.BoxGeometry(LINE_W, 0.10, 2.8),
+      new THREE.MeshStandardMaterial({color:0x1a1a2e, roughness:0.3, metalness:0.5})
+    );
+    cr.position.set(mx, MASK_Y+0.05, 0); grp.add(cr);
+  });
+
+  // ── Cr → PR 수직 투영선 (차광 영역: 빛 차단) ──
+  MASK_POS.forEach(mx=>{
+    const pts=[new THREE.Vector3(mx,MASK_Y-0.05,0.5),new THREE.Vector3(mx,BASE_Y,0.5)];
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    const lm=new THREE.LineDashedMaterial({color:0x888899,dashSize:0.10,gapSize:0.07,transparent:true,opacity:0.45});
+    const l=new THREE.Line(geo,lm); l.computeLineDistances(); grp.add(l);
+  });
+
+  // DOF 박스 제거 — Bossung 곡선으로 대신 표현
+
+  // ── PR: 미노광(갈색) / 노광(보라) ──
+  MASK_POS.forEach(mx=>{
+    addBox(LINE_W, PR_H, 2.8,  mx, BASE_Y+PR_H/2, 0,  mat(0xc8902a,xr?0.12:0.88,0.45));
+  });
+  // 노광 영역 (Cr 사이 공간) — Positive PR: 현상 시 제거됨
+  const exposedRanges=[[-6.0,-2.56],[-1.56,-0.36],[0.36,1.56],[2.56,6.0]];
+  exposedRanges.forEach(([x1,x2])=>{
+    const w=x2-x1, cx=(x1+x2)/2;
+    if(w>0.05) addBox(w, PR_H, 2.8,  cx, BASE_Y+PR_H/2, 0,  mat(0x7c3aaa,xr?0.10:0.72,0.4));
+  });
+}
+
+// ══ Phase 3: PEB ══
+function buildPhase3(xr){
+  clearGrp(); addWaferAndBARC(xr);
+  MASK_POS.forEach(mx=>{
+    addBox(LINE_W, PR_H, 2.8,  mx, BASE_Y+PR_H/2, 0,  mat(0xc8902a,xr?0.12:0.88,0.45));
+  });
+  const exposedRanges=[[-4.5,-2.56],[-1.56,-0.36],[0.36,1.56],[2.56,4.5]];
+  exposedRanges.forEach(([x1,x2])=>{
+    const w=x2-x1,cx=(x1+x2)/2;
+    if(w>0.05) addBox(w, PR_H, 2.8,  cx, BASE_Y+PR_H/2, 0,  mat(0x9955cc,xr?0.10:0.60,0.4));
+  });
+  // 산 확산 경계 표시
+  if(!xr){
+    MASK_POS.forEach(mx=>{
+      [-LINE_W/2, LINE_W/2].forEach(dx=>{
+        const dz=new THREE.Mesh(new THREE.BoxGeometry(0.07,PR_H,2.8),
+          new THREE.MeshBasicMaterial({color:0xffaa44,transparent:true,opacity:0.40}));
+        dz.position.set(mx+dx, BASE_Y+PR_H/2, 0); grp.add(dz);
+      });
+    });
+  }
+}
+
+// ══ Phase 4: Develop ══
+// 노광 영역 제거 → 미노광 영역만 남음 (3개 라인)
+// 중앙 라인: DOF 이탈 → 테이퍼+라운딩+Footing
+// 좌측 라인: Watermark → 높이 감소
+// 우측 라인: 정상 (수직 측벽)
+function buildPhase4(xr, fOff, hydV){
+  clearGrp(); addWaferAndBARC(xr);
+  const fSev = Math.abs(fOff)/120;
+  const hydSev = 1-(hydV/90);
+
+  // 웨이퍼 단차 (좌측 BARC가 약간 높음)
+  const stepH = lerp(0.005, 0.04, fSev);
+  const stepDisk = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.0,3.0,stepH,48),
+    mat(0x2da882, xr?0.1:0.38, 0.5)
+  );
+  stepDisk.position.set(-1.5, WAFER_TOP+stepH/2, 0); grp.add(stepDisk);
+
+  // ── 우측 정상 PR 라인 ──
+  const normX = MASK_POS[2]; // 2.2
+  addBox(LINE_W, PR_H, 2.8,  normX, BASE_Y+PR_H/2, 0,  mat(0x3a8fff,xr?0.14:0.90,0.4));
+
+  // ── 중앙 DOF 이탈 PR 라인 ──
+  const defX = MASK_POS[1]; // 0.0
+  // Footing: 바닥에서 옆으로 퍼짐
+  const fW = lerp(LINE_W, LINE_W*1.9, fSev);
+  addBox(fW, 0.08, 2.8,  defX, BASE_Y+0.04, 0,  mat(0xd9663a,xr?0.12:0.88,0.45));
+  // 테이퍼 슬랩 (바닥→위로 점점 좁아짐)
+  const nSlabs=5;
+  for(let i=0;i<nSlabs;i++){
+    const t=i/(nSlabs-1);
+    const w=lerp(LINE_W*lerp(1.0,1.55,fSev), LINE_W*lerp(0.98,0.58,fSev), t);
+    const sh=(PR_H-0.08)/nSlabs;
+    addBox(w, sh, 2.8,  defX, BASE_Y+0.08+i*sh+sh/2, 0,  mat(0xd9663a,xr?0.12:0.88,0.45));
+  }
+  // 상단 라운딩 — 살짝 뭉툭한 표현 (실제 DOF 이탈 프로파일)
+  const rRx=LINE_W/2*0.98;
+  const rRy=lerp(0.025, 0.055, fSev);
+  addDome(rRx,rRy,1.4,  defX, BASE_Y+PR_H+rRy*0.5, 0,  0xd9663a, xr?0.10:0.88);
+  // 결함 마커
+
+  // ── 좌측 Watermark PR 라인 ──
+  const wmX = MASK_POS[0]; // -2.2
+  const wmH = lerp(PR_H, PR_H*0.55, hydSev);
+  addBox(LINE_W, wmH, 2.8,  wmX, BASE_Y+wmH/2, 0,
+    mat(0x1a8cd8, xr?0.12:lerp(0.88,0.52,hydSev), 0.35, 0.05));
+
+  // Watermark 상단 울퉁불퉁 표면 (물방울 잔류로 인한 불균일 현상)
+  if(!xr){
+    const rippleCount = 7;
+    const rippleW = LINE_W / rippleCount;
+    for(let i=0;i<rippleCount;i++){
+      const rh = lerp(0.02, 0.06, hydSev) * (0.5 + 0.5*Math.sin(i * 2.2));
+      const rx = wmX - LINE_W/2 + rippleW*(i+0.5);
+      addBox(rippleW*0.9, rh, 2.8,
+        rx, BASE_Y+wmH+rh/2, 0,
+        mat(0x1a8cd8, lerp(0.5,0.75,hydSev), 0.3, 0.05));
+    }
+  }
+}
+
+// ══ Phase 5: Defect Analysis (단면 SEM 뷰) ══
+function buildPhase5(xr, fOff, hydV){
+  clearGrp();
+  const fSev=Math.abs(fOff)/120;
+  const hydSev=1-(hydV/90);
+  const op=xr?0.18:1;
+
+  // 기판 (Si) — 단면 박스로 표현
+  addBox(9.5,0.70,3.5,  0,-(0.35-WAFER_TOP), 0,  mat(0x4a6080,op,0.8));
+  // 격자 텍스처 평면 (윗면)
+  const gp=new THREE.Mesh(new THREE.PlaneGeometry(9.5,3.5),
+    new THREE.MeshStandardMaterial({map:waferTex,transparent:xr,opacity:xr?0.3:1,roughness:0.7}));
+  gp.rotation.x=-Math.PI/2;
+  gp.position.set(0, WAFER_TOP, 0); grp.add(gp);
+  // SiO₂ 절연막
+  addBox(9.5, SIO2_H, 3.5,  0, WAFER_TOP+SIO2_H/2, 0,
+    new THREE.MeshStandardMaterial({color:0xd4e8f5,transparent:true,opacity:xr?0.12:op*0.82,roughness:0.25,side:THREE.DoubleSide}));
+  // BARC
+  addBox(9.5, BARC_H, 3.5,  0, SIO2_TOP+BARC_H/2, 0,  mat(0x2da882,op*0.90,0.4));
+
+  // 정상 PR
+  const normX=MASK_POS[2];
+  addBox(LINE_W, PR_H, 3.2,  normX, BASE_Y+PR_H/2, 0,  mat(0x3a8fff,xr?0.14:op,0.4));
+
+  // DOF 이탈 PR
+  const defX=MASK_POS[1];
+  const fW=lerp(LINE_W,LINE_W*1.9,fSev);
+  addBox(fW, 0.08, 3.2,  defX, BASE_Y+0.04, 0,  mat(0xd9663a,xr?0.12:op,0.45));
+  for(let i=0;i<5;i++){
+    const t=i/4;
+    const w=lerp(LINE_W*lerp(1.0,1.55,fSev), LINE_W*lerp(0.98,0.58,fSev), t);
+    const sh=(PR_H-0.08)/5;
+    addBox(w, sh, 3.2,  defX, BASE_Y+0.08+i*sh+sh/2, 0,  mat(0xd9663a,xr?0.12:op,0.45));
+  }
+  const rRx=LINE_W/2*0.98;
+  const rRy=lerp(0.025, 0.055, fSev);
+  addDome(rRx,rRy,1.6,  defX, BASE_Y+PR_H+rRy*0.5, 0,  0xd9663a, xr?0.10:op);
+
+  // Watermark PR
+  const wmX=MASK_POS[0];
+  const wmH=lerp(PR_H,PR_H*0.55,hydSev);
+  addBox(LINE_W, wmH, 3.2,  wmX, BASE_Y+wmH/2, 0,
+    mat(0x1a8cd8, xr?0.12:lerp(op,op*0.52,hydSev), 0.35, 0.05));
+
+  // Watermark 상단 울퉁불퉁 표면
+  if(!xr){
+    const rippleCount = 7;
+    const rippleW = LINE_W / rippleCount;
+    for(let i=0;i<rippleCount;i++){
+      const rh = lerp(0.02, 0.06, hydSev) * (0.5 + 0.5*Math.sin(i * 2.2));
+      const rx = wmX - LINE_W/2 + rippleW*(i+0.5);
+      addBox(rippleW*0.9, rh, 3.2,
+        rx, BASE_Y+wmH+rh/2, 0,
+        mat(0x1a8cd8, lerp(0.5,0.75,hydSev), 0.3, 0.05));
+    }
+  }
+
+  // CD 측정선 (노란색)
+  if(!xr){
+    const cdMat=new THREE.LineBasicMaterial({color:0xffee44,transparent:true,opacity:0.70});
+    const topW=lerp(LINE_W*0.98,LINE_W*0.58,fSev)/2;
+    const topY=BASE_Y+PR_H+rRy*0.7;
+    grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-topW,topY,1.7),new THREE.Vector3(topW,topY,1.7)]),cdMat));
+    const botW=lerp(LINE_W,LINE_W*1.55,fSev)/2;
+    grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-botW,BASE_Y+0.10,1.7),new THREE.Vector3(botW,BASE_Y+0.10,1.7)]),cdMat));
+  }
+
+  // 단차 표시
+  addBox(3.5,lerp(0.005,0.04,fSev),3.5, -1.5, WAFER_TOP+lerp(0.003,0.02,fSev)/2, 0, mat(0x2da882,xr?0.1:0.38,0.5));
+}
+
+// ═══ STATE & CONTROLS ═══
+let curPhase=0,xray=false,autoRot=true;
+let isDrag=false,isRDrag=false,prevX=0,prevY=0;
+let rotX=0.36,rotY=0.40,panX=0,panY=0;
+let level='beginner',stepIdx=0,stepAnswered=false,hintLv=0;
+let totalCorrect=0,caseLog={steps:[],chat:[]},chatHist=[],lastNote='';
+let focusV=65,hydV=45;
+
+cv.addEventListener('mousedown',e=>{isDrag=e.button===0;isRDrag=e.button===2;prevX=e.clientX;prevY=e.clientY;autoRot=false;document.getElementById('rotBtn').classList.remove('active');});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('mouseup',()=>{isDrag=false;isRDrag=false;});
+window.addEventListener('mousemove',e=>{
+  if(isDrag){rotY+=(e.clientX-prevX)*0.007;rotX+=(e.clientY-prevY)*0.007;rotX=Math.max(-1.4,Math.min(1.4,rotX));}
+  if(isRDrag){panX-=(e.clientX-prevX)*0.01;panY+=(e.clientY-prevY)*0.01;}
+  prevX=e.clientX;prevY=e.clientY;
+});
+cv.addEventListener('wheel',e=>{e.preventDefault();camera.position.multiplyScalar(1+e.deltaY*0.001);},{passive:false});
+let tpx=0,tpy=0;
+cv.addEventListener('touchstart',e=>{tpx=e.touches[0].clientX;tpy=e.touches[0].clientY;autoRot=false;});
+cv.addEventListener('touchmove',e=>{e.preventDefault();rotY+=(e.touches[0].clientX-tpx)*0.01;rotX+=(e.touches[0].clientY-tpy)*0.01;rotX=Math.max(-1.4,Math.min(1.4,rotX));tpx=e.touches[0].clientX;tpy=e.touches[0].clientY;},{passive:false});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{rotX=0.36;rotY=0.40;panX=0;panY=0;camera.position.set(6,4,9);});
+document.getElementById('xrayBtn').addEventListener('click',()=>{xray=!xray;document.getElementById('xrayBtn').classList.toggle('active',xray);rebuildPhase();});
+document.getElementById('rotBtn').addEventListener('click',()=>{autoRot=!autoRot;document.getElementById('rotBtn').classList.toggle('active',autoRot);});
+
+// Sliders
+document.getElementById('focusSli').addEventListener('input',function(){
+  focusV=parseInt(this.value);
+  const vStr=(focusV>=0?'+':'')+focusV+' nm';
+  document.getElementById('focusVal').textContent=vStr;
+  document.getElementById('focusCondVal').textContent=vStr+(Math.abs(focusV)>42?' (이탈)':' (허용)');
+  document.getElementById('focusCondVal').style.color=Math.abs(focusV)>42?'var(--danger)':'var(--accent2)';
+  if(curPhase>=2)rebuildPhase();updateBossung();
+});
+document.getElementById('hydSli').addEventListener('input',function(){
+  hydV=parseInt(this.value);
+  document.getElementById('hydVal').textContent=hydV+'°';
+  if(curPhase>=4)rebuildPhase();
+});
+
+function rebuildPhase(){
+  switch(curPhase){
+    case 0:buildPhase0(xray);break;
+    case 1:buildPhase1(xray);break;
+    case 2:buildPhase2(xray,focusV,hydV);break;
+    case 3:buildPhase3(xray);break;
+    case 4:buildPhase4(xray,focusV,hydV);break;
+    case 5:buildPhase5(xray,focusV,hydV);break;
+  }
+}
+
+const PHASE_INFO=[
+  {t:'① HMDS + SPIN COAT',
+   d:'<strong>HMDS</strong>로 웨이퍼 표면을 소수성으로 전환 후 PR을 스핀 코팅합니다. 두께 h ∝ 1/√ω. 현재 보이는 균일한 갈색 막이 <strong>Positive PR</strong>입니다.'},
+  {t:'② SOFT BAKE (90~100°C)',
+   d:'솔벤트를 제거하고 PR 밀도를 높입니다. PR 막이 <strong>액체 → 고체</strong>로 변합니다. 온도 최적화 필수.'},
+  {t:'③ ArF IMMERSION 노광',
+   d:'마스크 <strong>Cr(차광부) 아래 = 미노광(갈색, 남는 부분)</strong> / <strong>투명부 아래 = 노광(보라색, 제거됨)</strong>. Focus Slider로 DOF 이탈 효과를 확인하세요. DOF 박스(초점 허용 범위)가 PR 안에 있어야 합니다.'},
+  {t:'④ PEB (110~120°C)',
+   d:'노광 영역에서 발생한 <strong>산(H⁺)이 확산</strong>합니다. 정재파를 평탄화하고 노광 경계를 명확하게 합니다. CAR에서는 이 단계가 패턴 품질을 결정합니다.'},
+  {t:'⑤ 현상 (DEVELOP — TMAH)',
+   d:'<strong>Positive PR: 노광 영역(보라) → 제거 / 미노광 영역(갈색) → 남음</strong>. 정상 조건: 수직 측벽 파란 라인 3개. DOF 이탈 시: 중앙 라인이 테이퍼+라운딩+Footing. 소수성 부족 시: 좌측 라인이 Watermark.'},
+  {t:'⑥ 결함 단면 분석',
+   d:'<strong>CD-SEM 단면 뷰</strong>. 노란 선이 Top/Bottom CD 측정입니다. DOF 이탈 라인은 Top CD < Bot CD (테이퍼 확인). Watermark 라인은 높이 감소 + 표면 불균일.'},
+];
+
+function goPhase(idx){
+  curPhase=idx;
+  document.querySelectorAll('.ph-btn').forEach((b,i)=>{b.classList.toggle('active',i===idx);if(i<idx)b.classList.add('done');else b.classList.remove('done');});
+  document.querySelectorAll('.proc-step').forEach((b,i)=>{b.classList.toggle('active',i===idx);if(i<idx)b.classList.add('done');else b.classList.remove('done');});
+  document.getElementById('pfill').style.width=(idx/5*100)+'%';
+  const info=PHASE_INFO[idx];
+  document.getElementById('infoTitle').textContent=info.t;
+  document.getElementById('infoBody').innerHTML=info.d;
+  const nb=document.getElementById('nextPhaseBtn');
+  if(idx>=5){nb.textContent='문제 풀기 →';nb.onclick=()=>startQuiz();}
+  else{nb.textContent='다음 단계 →';nb.onclick=()=>goPhase(idx+1);}
+  document.getElementById('sliderBar').style.display=idx>=2?'block':'none';
+  // quizSec은 '문제 풀기' 버튼(startQuiz)에서만 표시됨
+  if(idx===5){camera.position.set(3.5,2.5,8);rotX=0.15;rotY=0.28;}
+  else if(idx===2){camera.position.set(5,5,10);rotX=0.25;rotY=0.35;}
+  else{camera.position.set(6,4,9);rotX=0.36;rotY=0.40;}
+  rebuildPhase();
+}
+document.querySelectorAll('.ph-btn').forEach(b=>b.addEventListener('click',()=>goPhase(parseInt(b.dataset.p))));
+document.querySelectorAll('.proc-step').forEach(b=>b.addEventListener('click',()=>goPhase(parseInt(b.dataset.p))));
+
+// ═══ BOSSUNG CHART ═══
+const bCtx=document.getElementById('boscv').getContext('2d');
+let bChart=null;
+function updateBossung(){
+  const fRange=[],cdData=[];
+  for(let f=-120;f<=120;f+=15){fRange.push(f);cdData.push(lerp(1.0,0.62,(f*f)/(120*120)).toFixed(3));}
+  const cf=focusV,ccd=lerp(1.0,0.62,(cf*cf)/(120*120));
+  if(bChart)bChart.destroy();
+  bChart=new Chart(bCtx,{
+    type:'line',
+    data:{labels:fRange,datasets:[
+      {label:'CD',data:cdData,borderColor:'#58a6ff',borderWidth:1.5,pointRadius:0,fill:false,tension:0.4},
+      {label:'Now',data:fRange.map(f=>f===cf?ccd:null),pointRadius:7,pointBorderWidth:2,showLine:false,pointBackgroundColor:Math.abs(cf)>42?'#f85149':'#3fb950',borderColor:Math.abs(cf)>42?'#f85149':'#3fb950'},
+    ]},
+    options:{responsive:false,animation:false,plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#484f58',font:{size:8},maxTicksLimit:7},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'Focus (nm)',color:'#8b949e',font:{size:9}}},
+        y:{ticks:{color:'#484f58',font:{size:8}},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'CD(norm)',color:'#8b949e',font:{size:9}},min:0.5,max:1.05}
+      }
+    }
+  });
+}
+
+// ═══ QUIZ (참조 파일 패턴 기반) ═══
+const NL='\n';
+const ASSIST_SYS='당신은 반도체 포토리소그래피 전공 조교입니다. 학생이 ArF Immersion 노광의 DOF 이탈+Watermark 복합 결함을 분석 중입니다. Positive PR은 노광 영역이 현상 시 제거됨을 기반으로 DOF=k₂·λ/NA², Bossung 곡선, PR 소수성 원리를 활용해 힌트를 줍니다. 정답을 통째로 알려주지 말고 이해를 돕는 방향으로 3~5문장으로 안내합니다. 항상 한국어로.';
+const NOTE_SYS='반도체 포토리소그래피 학습 튜터입니다. ArF Immersion DOF 이탈+Watermark 케이스 완료 기록을 분석합니다. DOF 공식, Positive PR 노광/현상 원리, Bossung 곡선, PR 소수성과 Watermark 메커니즘을 포함한 사실 기반 학습 노트를 작성합니다. 마크다운 없이 트리 기호(├ └ ·)만 사용합니다.';
+
+async function askClaude(msgs,sys){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:msgs})});
+  if(!r.ok)throw new Error('API '+r.status);
+  const d=await r.json();return(d.content||[]).map(b=>b.type==='text'?b.text:'').filter(Boolean).join(NL).trim();
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+// buildSteps: 참조 파일 패턴과 동일
+function buildSteps(c){
+  const steps=[];
+  if(c.typeQ) steps.push(Object.assign({label:'결함 종류'},c.typeQ));
+  if(c.equipQ) steps.push(Object.assign({label:'분석 장비'},c.equipQ));
+  steps.push({label:'발생 원인', q:c.causeQ||'이 결함의 가장 적절한 발생 원인은?', choices:c.choices, ok:c.feedbackOK, no:c.feedbackNo});
+  if(c.solutionQ) steps.push(Object.assign({label:'해결 방법'},c.solutionQ));
+  return steps;
+}
+
+let caseSteps=[];
+
+function startQuiz(){
+  caseSteps=buildSteps(CASE);
+  stepIdx=0; stepAnswered=false; hintLv=0;
+  caseLog={steps:[],chat:[]};chatHist=[];
+
+  // 우측 패널 표시
+  document.getElementById('cluesSec').style.display='block';
+  document.getElementById('situationSec').style.display='block';
+  document.getElementById('quizSec').style.display='flex';
+  document.getElementById('formulaSec').style.display='block';
+  document.getElementById('askPanel').style.display='block';
+  document.getElementById('notePanel').style.display='block';
+
+  document.getElementById('situationText').innerHTML=CASE.situation;
+  buildClues();
+  renderStep();
+  renderChat();
+}
+
+function buildClues(){
+  document.getElementById('cluesEl').innerHTML=CASE.clues.map((t,i)=>
+    `<button class='clue-item' onclick='toggleClue(this)'><span class='cn'>${i+1}</span><span class='ct'>${t}</span><span class='cc'>✓</span></button>`
+  ).join('');
+  updCC();
+}
+function toggleClue(b){b.classList.toggle('done');updCC();}
+function updCC(){const d=document.querySelectorAll('.clue-item.done').length,total=CASE.clues.length;document.getElementById('ccountEl').textContent=d+' / '+total+' 확인';}
+
+function correctText(s){return(s.choices.find(c=>c.correct)||{}).text||'';}
+
+function renderStep(){
+  const s=caseSteps[stepIdx]; stepAnswered=false; hintLv=0;
+  const n=caseSteps.length;
+  document.getElementById('stepBar').innerHTML=caseSteps.map((st,i)=>
+    `<span class='spill ${i===stepIdx?'on':''} ${i<stepIdx?'done':''}'>${i+1}. ${st.label}</span>`
+  ).join(`<span class='step-arrow'>›</span>`);
+  document.getElementById('qqEl').innerHTML=`<span class='stag'>STEP ${stepIdx+1} / ${n}</span>${s.q}`;
+
+  const fb=document.getElementById('fbEl');fb.className='fb';fb.textContent='';
+  document.getElementById('stepNextBtn').className='nbtn';
+  document.getElementById('finBtn').className='nbtn';
+  document.getElementById('houtEl').innerHTML='';
+  const hb=document.getElementById('hintBtn');hb.disabled=false;hb.textContent='▸ 힌트';
+
+  const cw=document.getElementById('choicesEl'),tw=document.getElementById('textEl');
+  if(level==='beginner'){
+    tw.style.display='none';cw.style.display='';
+    cw.innerHTML=s.choices.map((ch,i)=>
+      `<button class='choice' onclick='choose(${i})'>${String.fromCharCode(65+i)}. ${ch.text}</button>`
+    ).join('');
+  } else {
+    cw.style.display='none';cw.innerHTML='';tw.style.display='block';
+    const ta=document.getElementById('taEl');ta.value='';ta.disabled=false;
+    document.getElementById('maEl').className='ma';document.getElementById('maEl').textContent='';
+    document.getElementById('smEl').style.display='none';
+    document.querySelectorAll('#smEl .mbtn').forEach(b=>b.disabled=false);
+    const kw=document.getElementById('kwEl');
+    if(level==='intermediate'){
+      const terms=(CASE.hints?CASE.hints.mechanism:'').split(/[,·]/).map(t=>t.trim()).filter(Boolean);
+      kw.style.display='flex';
+      kw.innerHTML=`<span class='kwc'><b>키워드 힌트</b></span>`+terms.map(t=>`<span class='kwc'>${t}</span>`).join('');
+    } else {kw.style.display='none';kw.innerHTML='';}
+    const aiBtn=document.getElementById('aiBtn');
+    aiBtn.textContent=(level==='advanced')?'가설 검증 ▸':'AI 첨삭 ▸';
+    aiBtn.disabled=false;
+  }
+}
+
+function recordAndAdvance(ok,picked,answer){
+  if(ok)totalCorrect++;
+  const s=caseSteps[stepIdx];
+  caseLog.steps.push({label:s.label,question:s.q.replace(/<[^>]+>/g,''),picked,correct:ok,answer});
+  const isLast=stepIdx>=caseSteps.length-1;
+  document.getElementById('stepNextBtn').className=isLast?'nbtn':'nbtn show';
+  if(isLast)document.getElementById('finBtn').className='nbtn show';
+}
+
+function choose(idx){
+  if(stepAnswered)return;stepAnswered=true;
+  const s=caseSteps[stepIdx];
+  const btns=document.querySelectorAll('.choice');btns.forEach(b=>b.disabled=true);
+  const ok=s.choices[idx].correct;
+  btns[idx].className='choice '+(ok?'correct':'wrong');
+  if(!ok)s.choices.forEach((ch,i)=>{if(ch.correct)btns[i].className='choice correct';});
+  const fb=document.getElementById('fbEl');
+  fb.textContent=(ok?'✓ ':'✗ ')+(ok?s.ok:s.no);
+  fb.className='fb show '+(ok?'ok':'ng');
+  recordAndAdvance(ok,s.choices[idx].text,correctText(s));
+}
+
+// 모범답안 보기 (중급/고급)
+document.getElementById('revealBtn').addEventListener('click',()=>{
+  const s=caseSteps[stepIdx];const ma=document.getElementById('maEl');
+  ma.innerHTML=`<b>모범답안</b> ${esc(correctText(s))}<br><span style='color:var(--text2)'>${esc(s.ok)}</span>`;
+  ma.className='ma show';document.getElementById('smEl').style.display='flex';
+});
+
+function selfMark(ok){
+  if(stepAnswered)return;stepAnswered=true;
+  const s=caseSteps[stepIdx];
+  document.getElementById('taEl').disabled=true;
+  const fb=document.getElementById('fbEl');
+  fb.textContent=(ok?'✓ 잘했어요. ':'✗ 다시 정리해 봅시다. ')+s.ok;
+  fb.className='fb show '+(ok?'ok':'ng');
+  document.querySelectorAll('#smEl .mbtn').forEach(b=>b.disabled=true);
+  recordAndAdvance(ok,document.getElementById('taEl').value.trim()||(ok?'(자가채점 맞음)':'(자가채점 아쉬움)'),correctText(s));
+}
+document.getElementById('mRight').addEventListener('click',()=>selfMark(true));
+document.getElementById('mWrong').addEventListener('click',()=>selfMark(false));
+
+// AI 첨삭 / 가설검증
+document.getElementById('aiBtn').addEventListener('click',async()=>{
+  const s=caseSteps[stepIdx];const ans=document.getElementById('taEl').value.trim();
+  const fb=document.getElementById('fbEl');
+  if(!ans){fb.className='fb show ng';fb.textContent='먼저 답을 작성해 주세요.';return;}
+  const btn=document.getElementById('aiBtn');btn.disabled=true;
+  fb.className='fb show';fb.innerHTML='<span class="ail">Claude가 검토 중…</span>';
+  let prompt;
+  if(level==='advanced'){
+    const errs=(CASE.commonErrors||[]).map(e=>'- 오해: '+e.wrong+' → 반박: '+e.rebut).join(NL);
+    prompt='[문제] '+s.q.replace(/<[^>]+>/g,'')+NL+'[정답] '+correctText(s)+NL+'[흔한 오해/반박]'+NL+errs+NL+NL+'[학생 답/가설] '+ans+NL+NL+'그 가설이 맞다면 X가 관찰되어야 하는데 실제로는 Y라는 방식으로 2~3문장으로 스스로 교정하도록 유도하세요.';
+  } else {
+    prompt='[문제] '+s.q.replace(/<[^>]+>/g,'')+NL+'[모범답안] '+correctText(s)+' / '+s.ok+NL+NL+'[학생 답] '+ans+NL+NL+'맞는 부분 인정하고, 빠진 핵심 키워드나 부정확한 부분을 2~3문장으로 짚어주세요.';
+  }
+  try{const out=await askClaude([{role:'user',content:prompt}],ASSIST_SYS);fb.className='fb show';fb.textContent=out;}
+  catch(e){
+    if(level==='advanced'&&CASE.commonErrors.length){
+      fb.className='fb show';fb.innerHTML='<b>가설 점검</b><br>'+CASE.commonErrors.map(e=>'· 만약 '+esc(e.wrong)+' 이라면? '+esc(e.rebut)).join('<br>');
+    } else {fb.className='fb show';fb.textContent='⚠ AI 피드백은 claude.ai 아티팩트에서 작동합니다.';}
+  }
+  btn.disabled=false;document.getElementById('smEl').style.display='flex';
+});
+
+// 힌트 시스템
+const HT_TITLES=['공정 조건 데이터','메커니즘 키워드','유사 현장 사례'];
+document.getElementById('hintBtn').addEventListener('click',()=>{
+  if(hintLv>=3)return;
+  const hks=['process','mechanism','field'];
+  const body=CASE.hints[hks[hintLv]]||'해당 단계에서 어떤 공정 파라미터가 이 결함에 영향을 줄지 생각해보세요.';
+  const d=document.createElement('div');d.className='hi';
+  d.innerHTML=`<b>HINT ${hintLv+1} · ${HT_TITLES[hintLv]}</b>${esc(body)}`;
+  document.getElementById('houtEl').appendChild(d);hintLv++;
+  const hb=document.getElementById('hintBtn');
+  if(hintLv>=3){hb.disabled=true;hb.textContent='힌트 모두 사용됨';}
+  else hb.textContent=`▸ 힌트 더 보기 ${hintLv}/3`;
+});
+
+document.getElementById('stepNextBtn').addEventListener('click',()=>{if(stepIdx<caseSteps.length-1){stepIdx++;renderStep();}});
+document.getElementById('finBtn').addEventListener('click',()=>{
+  document.getElementById('scoreSc').className='score-sc show';
+  document.getElementById('scoreBig').textContent=totalCorrect+' / '+caseSteps.length;
+  const r=totalCorrect/caseSteps.length;
+  document.getElementById('scoreSub').textContent=
+    r===1?'완벽합니다. 공정 트러블슈팅 감각이 뛰어납니다.':
+    r>=0.75?'좋습니다. 핵심 개념을 잘 이해하고 있습니다.':
+    r>=0.5?'틀린 단계의 메커니즘을 다시 정리해보세요.':
+    '공정 흐름을 다시 경험하며 원리를 정리해보세요.';
+});
+function restartAll(){
+  totalCorrect=0;stepIdx=0;stepAnswered=false;hintLv=0;
+  caseLog={steps:[],chat:[]};chatHist=[];
+  document.getElementById('scoreSc').className='score-sc';
+  // 우측 패널 숨기기
+  ['cluesSec','situationSec','quizSec','formulaSec','askPanel','notePanel'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  goPhase(0);
+}
+
+document.querySelectorAll('.lvl-btn').forEach(b=>b.addEventListener('click',()=>{
+  level=b.dataset.lvl;
+  document.querySelectorAll('.lvl-btn').forEach(x=>x.classList.toggle('active',x===b));
+  if(curPhase>=5)renderStep();
+}));
+document.querySelectorAll('.slvl').forEach(b=>b.addEventListener('click',()=>{
+  level=b.dataset.lvl;
+  document.querySelectorAll('.lvl-btn').forEach(x=>x.classList.toggle('active',x.dataset.lvl===level));
+  document.getElementById('startSc').classList.remove('show');
+  goPhase(0);
+}));
+
+// Chat
+function renderChat(){
+  const log=document.getElementById('clog');
+  if(!chatHist.length){log.innerHTML='<div class="cempty">공정 원리나 결함에 대해 물어보세요.</div>';return;}
+  log.innerHTML=chatHist.map(m=>`<div class='cmsg ${m.role}'><span class='cwho'>${m.role==='user'?'나':'CLAUDE'}</span>${esc(m.text)}</div>`).join('');
+  log.scrollTop=log.scrollHeight;
+}
+async function sendChat(){
+  const inp=document.getElementById('cinp');const text=inp.value.trim();if(!text)return;
+  const ctx='[현재 케이스] ArF Immersion DOF이탈+Watermark 복합 결함. Positive PR, NA=1.32, DOF≈82nm, 웨이퍼 단차 30nm, PR 접촉각 45°.';
+  chatHist.push({role:'user',text});caseLog.chat.push({role:'user',text});
+  chatHist.push({role:'assistant',text:'…'});renderChat();inp.value='';
+  document.getElementById('csend').disabled=true;
+  const msgs=chatHist.slice(0,-1).map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+  if(msgs.length) msgs[0]={role:'user',content:ctx+NL+NL+'학생 질문: '+msgs[0].content};
+  else msgs.push({role:'user',content:ctx+NL+NL+'학생 질문: '+text});
+  try{const out=await askClaude(msgs,ASSIST_SYS);chatHist[chatHist.length-1].text=out;caseLog.chat.push({role:'assistant',text:out});}
+  catch(e){chatHist[chatHist.length-1].text='⚠ AI 답변은 claude.ai 아티팩트에서 작동합니다.';}
+  document.getElementById('csend').disabled=false;renderChat();inp.focus();
+}
+document.getElementById('csend').addEventListener('click',sendChat);
+document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendChat();}});
+
+// 학습 노트
+document.getElementById('noteBtn').addEventListener('click',async()=>{
+  const btn=document.getElementById('noteBtn'),out=document.getElementById('noteOut');
+  btn.disabled=true;out.className='note-out show';out.innerHTML='<span class="ail">Claude가 학습 기록을 분석하고 있습니다…</span>';
+  const steps=caseLog.steps.map((s,i)=>(i+1)+') ['+s.label+'] '+(s.correct?'정답':'오답')+' — 학생: '+s.picked+' / 정답: '+s.answer).join(NL);
+  const chats=caseLog.chat.length?caseLog.chat.map(m=>(m.role==='user'?'학생: ':'Claude: ')+m.text).join(NL):'(질문 없음)';
+  const prompt=['[케이스] ArF Immersion DOF 이탈 + Watermark 복합 결함 (Positive PR)','[핵심 원리] 노광 영역(PAG→산→deprotect) → 현상 시 제거 / DOF=k₂·λ/NA²≈82nm / 단차 30nm가 마진 37% 소모 / PR 소수성↓ → Watermark','','[학생 응답]',steps,'','[질문 기록]',chats,'','위 기록으로 학습 노트 작성. 마크다운 없이 트리 기호만 사용.','','【결함 분석 트리】','DOF 이탈: ├ 관찰: CD-SEM FEM, X-SEM / ├ 원인: DOF 82nm, 단차 30nm, 37% 소모 / └ 해결: CMP, Bossung 윈도우','Watermark: ├ 관찰: 표면 얼룩, 두께↓, 접촉각 측정 / ├ 원인: PR 소수성↓, 침지 매질 흡착 / └ 해결: Topcoat, 고소수성 PR','','【핵심 개념 (공식 포함)】','Positive PR 노광/현상 원리, DOF=k₂·λ/NA², 단차-DOF 관계, PR 소수성과 Watermark','','【사고 흐름 피드백】','복합 결함을 두 원인으로 분리했는지, DOF 공식과 노광/현상 논리를 활용했는지 짚어주세요.'].join(NL);
+  try{const note=await askClaude([{role:'user',content:prompt}],NOTE_SYS);out.textContent=note;}
+  catch(e){out.innerHTML='<span style="color:var(--warn)">⚠ 분석 노트는 claude.ai 아티팩트에서 작동합니다.</span>';}
+  btn.disabled=false;
+});
+
+// ═══ ANIMATION ═══
+const clk=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);resize();
+  const t=clk.getElapsedTime();
+  if(autoRot)rotY+=0.004;
+  grp.rotation.x=rotX;grp.rotation.y=rotY;grp.position.x=panX;grp.position.y=panY;
+  // 부유 없음 — 구조 관찰 우선 // 부드러운 부유
+  renderer.render(scene,camera);
+}
+
+// ═══ INIT ═══
+document.getElementById('quizSec').style.display='none';
+document.getElementById('sliderBar').style.display='none';
+updateBossung();
+goPhase(0);
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArF Immersion 복합 결함 트러블슈팅 시뮬레이터</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface2: #eef2f8;
+    --border: rgba(40,80,150,0.16);
+    --border2: rgba(40,80,150,0.34);
+    --accent: #2563eb;
+    --accent2: #0d9488;
+    --danger: #dc2626;
+    --warn: #d97706;
+    --text: #16202e;
+    --text2: #4a5a73;
+    --text3: #6b7c96;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans KR', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+  .logo span { color: var(--text2); }
+  .header-tag {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+
+  /* LAYOUT */
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+
+  /* HERO */
+  .hero {
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+  .hero h1 {
+    font-size: clamp(24px, 4vw, 40px);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero-desc {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.8;
+    max-width: 560px;
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* SIDEBAR */
+  .sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(20,40,80,0.05), 0 1px 2px rgba(20,40,80,0.04);
+  }
+  .panel-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+  }
+  .panel-body { padding: 12px 14px; }
+
+  /* CASE LIST */
+  .case-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+  }
+  .case-item:hover { background: var(--surface2); }
+  .case-item.active {
+    background: rgba(58,143,255,0.08);
+    border-color: rgba(58,143,255,0.3);
+  }
+  .case-item-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+  .case-item-title {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  .case-item.active .case-item-title { color: var(--accent); }
+
+  /* LEGEND */
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* CONDITIONS */
+  .cond-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  .cond-item:last-child { border-bottom: none; }
+  .cond-key { color: var(--text3); margin-right: 6px; }
+
+  /* VIEWER */
+  .viewer-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(20,40,80,0.05), 0 1px 2px rgba(20,40,80,0.04);
+  }
+  .viewer-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .viewer-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+  }
+  .viewer-controls { display: flex; gap: 6px; }
+  .vbtn {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .vbtn:hover { background: var(--surface2); color: var(--text); }
+  .vbtn.active { background: rgba(58,143,255,0.12); border-color: var(--accent); color: var(--accent); }
+
+  #threeCanvas {
+    display: block;
+    width: 100%;
+    height: 420px;
+    cursor: grab;
+  }
+  #threeCanvas:active { cursor: grabbing; }
+
+  .viewer-hint {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+
+  /* SITUATION + QUIZ */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .situation-text {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.9;
+  }
+  .situation-text strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* QUIZ */
+  .quiz-q {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 12px;
+    line-height: 1.7;
+    font-family: var(--mono);
+  }
+  .choice {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 6px;
+    transition: all 0.15s;
+    line-height: 1.5;
+    font-family: var(--sans);
+    font-weight: 300;
+  }
+  .choice:hover:not(:disabled) { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .choice.correct { background: rgba(0,212,170,0.08); border-color: rgba(0,212,170,0.4); color: var(--accent2); }
+  .choice.wrong { background: rgba(255,85,85,0.08); border-color: rgba(255,85,85,0.35); color: var(--danger); }
+  .choice:disabled { cursor: default; }
+
+  .feedback-box {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.8;
+    display: none;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.success { background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.25); color: var(--accent2); }
+  .feedback-box.fail { background: rgba(255,85,85,0.06); border: 1px solid rgba(255,85,85,0.25); color: var(--danger); }
+
+  .next-btn {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+    display: none;
+  }
+  .next-btn.show { display: inline-block; }
+  .next-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* SCORE */
+  .score-screen {
+    text-align: center;
+    padding: 3rem 1rem;
+    display: none;
+  }
+  .score-screen.show { display: block; }
+  .score-big {
+    font-family: var(--mono);
+    font-size: 64px;
+    color: var(--accent);
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .score-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+  .restart-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 24px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+  .restart-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* PROGRESS */
+  .progress-track {
+    height: 2px;
+    background: var(--border);
+    margin: 0 16px 0;
+    border-radius: 2px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* SCANLINE ATMOSPHERE */
+  .viewer-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
+    border-radius: 8px;
+  }
+  .viewer-panel { position: relative; }
+
+  /* AI DEEP DIVE */
+  .ai-panel {
+    margin-top: 16px;
+    border-color: var(--border2);
+  }
+  .ai-panel .panel-header { color: var(--accent2); }
+  .ai-intro {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+  .ai-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--accent2);
+    background: rgba(0,212,170,0.06);
+    color: var(--accent2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .ai-btn:hover:not(:disabled) { background: rgba(0,212,170,0.14); }
+  .ai-btn:disabled { opacity: 0.5; cursor: default; }
+  .ai-question {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 2px solid var(--accent2);
+    background: rgba(0,212,170,0.04);
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text);
+  }
+  .ai-question.show { display: block; }
+  .ai-q-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--accent2);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .ai-answer {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .ai-answer:focus { outline: none; border-color: var(--accent2); }
+  .ai-row { display: flex; gap: 8px; margin-top: 10px; }
+  .ai-feedback {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 2px solid var(--accent);
+    background: rgba(58,143,255,0.05);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+  .ai-feedback.show { display: block; }
+  .ai-loading {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+  }
+
+  /* VIEWER ROW — 3D model + real image side by side */
+  .viewer-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .photo-panel { display: flex; flex-direction: column; }
+  label.vbtn { display: inline-flex; align-items: center; }
+  .photo-stage {
+    position: relative;
+    height: 420px;
+    background: #eef2f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #realPhoto { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .photo-placeholder {
+    text-align: center;
+    padding: 22px;
+    margin: 16px;
+    width: calc(100% - 32px);
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    color: var(--text3);
+  }
+  .photo-ph-icon { font-size: 26px; opacity: 0.45; margin-bottom: 10px; }
+  .photo-ph-text {
+    font-size: 12px; line-height: 1.7; font-family: var(--mono);
+    letter-spacing: 0.02em; color: var(--text2);
+  }
+  .photo-ph-sub { font-size: 10px; margin-top: 8px; opacity: 0.85; font-family: var(--sans); }
+  .photo-ph-text b, .photo-ph-sub b { color: var(--text2); font-weight: 500; }
+  .photo-caption {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    min-height: 19px;
+  }
+
+  /* METROLOGY */
+  .equip-item { padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .equip-item:last-child { border-bottom: none; }
+  .equip-tool {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    letter-spacing: 0.03em; margin-bottom: 3px;
+  }
+  .equip-use { font-size: 11px; color: var(--text2); line-height: 1.55; }
+
+  /* LEVEL SWITCH */
+  .level-switch { display: flex; border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
+  .lvl-btn { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; padding: 5px 11px; background: transparent; color: var(--text3); border: none; cursor: pointer; transition: all 0.15s; }
+  .lvl-btn + .lvl-btn { border-left: 1px solid var(--border); }
+  .lvl-btn.active { background: var(--accent); color: #ffffff; }
+  .lvl-btn:not(.active):hover { background: var(--surface2); color: var(--text2); }
+
+  /* START OVERLAY */
+  .start-screen { position: fixed; inset: 0; z-index: 500; display: none; align-items: center; justify-content: center; background: rgba(18,26,38,0.55); backdrop-filter: blur(6px); padding: 1.5rem; }
+  .start-screen.show { display: flex; }
+  .start-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 2.2rem 2rem; max-width: 680px; width: 100%; box-shadow: 0 24px 60px rgba(18,26,38,0.25); text-align: center; }
+  .start-eyebrow { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 10px; }
+  .start-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .start-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.6rem; line-height: 1.6; }
+  .start-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .start-lvl { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 12px; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .start-lvl:hover { border-color: var(--accent); background: rgba(37,99,235,0.06); transform: translateY(-2px); }
+  .sl-name { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .sl-desc { font-size: 11px; color: var(--text2); line-height: 1.6; }
+
+  /* VISUAL CLUES */
+  .clues-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .clues-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent2); white-space: nowrap; padding-top: 3px; }
+  .clues-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .clue-chip { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: rgba(13,148,136,0.08); border: 1px solid rgba(13,148,136,0.25); color: var(--accent2); }
+
+  /* TEXT-ANSWER MODE */
+  .kw-hint { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .kw-chip { font-family: var(--mono); font-size: 10.5px; padding: 3px 9px; border-radius: 4px; background: var(--surface2); border: 1px dashed var(--border2); color: var(--text2); }
+  .kw-chip b { color: var(--accent); font-weight: 700; }
+  .answer-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; resize: vertical; }
+  .answer-input:focus { outline: none; border-color: var(--accent); }
+  .step-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .ai-btn.sm { font-size: 11px; padding: 7px 12px; }
+  .ai-btn.ghost { background: transparent; }
+  .model-answer { display: none; margin-top: 10px; padding: 11px 13px; border-radius: 8px; background: rgba(13,148,136,0.06); border: 1px solid rgba(13,148,136,0.22); border-left: 3px solid var(--accent2); font-size: 12.5px; line-height: 1.6; color: var(--text); }
+  .model-answer.show { display: block; }
+  .self-mark { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .self-mark-label { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .mark-btn { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border2); background: transparent; transition: all 0.15s; }
+  .mark-btn.ok { color: var(--accent2); border-color: rgba(13,148,136,0.4); }
+  .mark-btn.ok:hover { background: rgba(13,148,136,0.1); }
+  .mark-btn.no { color: var(--danger); border-color: rgba(220,38,38,0.4); }
+  .mark-btn.no:hover { background: rgba(220,38,38,0.08); }
+
+  /* HINT SYSTEM */
+  .hint-wrap { margin-top: 12px; }
+  .hint-btn { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 6px 13px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--warn); transition: all 0.15s; }
+  .hint-btn:hover { background: rgba(217,119,6,0.07); }
+  .hint-btn:disabled { opacity: 0.4; cursor: default; }
+  .hint-out { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .hint-item { font-size: 12px; line-height: 1.55; padding: 8px 11px; border-radius: 7px; background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); color: var(--text); }
+  .hint-item b { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; color: var(--warn); display: block; margin-bottom: 3px; }
+
+  /* OBSERVE / VISUAL CLUES */
+  .observe-panel { margin-top: 16px; }
+  .observe-guide { font-size: 12.5px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
+  .observe-guide b { color: var(--accent); }
+  .clues-list { display: flex; flex-direction: column; gap: 8px; }
+  .clue-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.15s; font-family: var(--sans); }
+  .clue-item:hover { border-color: var(--accent2); background: rgba(13,148,136,0.05); }
+  .clue-num { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .clue-text { flex: 1; font-size: 13px; color: var(--text); line-height: 1.45; }
+  .clue-check { flex: none; font-size: 14px; font-weight: 700; color: var(--accent2); opacity: 0; transition: opacity 0.15s; }
+  .clue-item.done { background: rgba(13,148,136,0.1); border-color: rgba(13,148,136,0.4); }
+  .clue-item.done .clue-num { background: var(--accent2); border-color: var(--accent2); color: #ffffff; }
+  .clue-item.done .clue-check { opacity: 1; }
+  .clue-item.done .clue-text { color: var(--text2); }
+  .observe-legend { display: flex; align-items: center; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .ol-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+  .ol-dot { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .ol-dot.red { border-bottom: 9px solid #e24b4a; }
+  .ol-dot.green { border-bottom: 9px solid #2da882; }
+  .observe-count { margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent2); }
+
+  /* SEVERITY SLIDER */
+  .severity-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .severity-label { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text2); letter-spacing: 0.06em; white-space: nowrap; }
+  .severity-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--surface2); outline: none; }
+  .severity-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .severity-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #ffffff; }
+  .severity-val { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent); min-width: 40px; text-align: right; }
+
+  /* TROUBLESHOOTING CHAIN */
+  .step-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 12px; }
+  .step-pill {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.02em;
+    padding: 3px 7px; border-radius: 4px; border: 1px solid var(--border);
+    color: var(--text3); background: transparent; white-space: nowrap;
+  }
+  .step-pill.on { color: var(--accent); border-color: var(--accent); background: rgba(37,99,235,0.07); }
+  .step-pill.done { color: var(--accent2); border-color: rgba(13,148,136,0.4); }
+  .step-arrow { color: var(--text3); font-size: 10px; }
+  .step-tag {
+    display: inline-block; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+    color: var(--accent); background: rgba(37,99,235,0.08); padding: 2px 6px; border-radius: 3px;
+    margin-right: 8px; vertical-align: middle;
+  }
+
+  /* AI CHAT */
+  .chat-log { max-height: 220px; overflow-y: auto; margin: 4px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+  .chat-empty { font-size: 11px; color: var(--text3); font-family: var(--mono); padding: 8px 0; }
+  .chat-msg { font-size: 12.5px; line-height: 1.6; padding: 8px 11px; border-radius: 8px; max-width: 88%; white-space: pre-wrap; word-break: break-word; }
+  .chat-msg.user { align-self: flex-end; background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.18); }
+  .chat-msg.assistant { align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); }
+  .chat-who { display: block; font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 3px; }
+  .chat-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; padding: 9px 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--sans); font-size: 13px; box-sizing: border-box; }
+  .chat-input:focus { outline: none; border-color: var(--accent); }
+
+  /* AI NOTE */
+  .note-out {
+    display: none; margin-top: 12px; padding: 14px 15px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; word-break: break-word; max-height: 460px; overflow-y: auto;
+  }
+  .note-out.show { display: block; }
+
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .viewer-row { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    header { padding: 0 1rem; }
+    .page { padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SEMI<span>_</span>SIM <span>// ArF Immersion</span></div>
+  <div class="header-tag">ArF Immersion 복합 결함 트러블슈팅 시뮬레이터</div>
+  <div class='level-switch' id='levelSwitch'>
+    <button class='lvl-btn active' data-lvl='beginner'>초급</button>
+    <button class='lvl-btn' data-lvl='intermediate'>중급</button>
+    <button class='lvl-btn' data-lvl='advanced'>고급</button>
+  </div>
+</header>
+
+<div class='start-screen show' id='startScreen'>
+  <div class='start-card'>
+    <div class='start-eyebrow'>STEP 1 · 난이도 선택</div>
+    <div class='start-title'>학습 난이도를 선택하세요</div>
+    <div class='start-sub'>숙련도에 따라 문제 형식이 달라집니다. 이 케이스는 ArF Immersion 공정의 <strong>DOF 이탈 + Watermark</strong> 복합 결함을 다룹니다.</div>
+    <div class='start-levels'>
+      <button class='start-lvl' data-lvl='beginner'>
+        <div class='sl-name'>초급</div>
+        <div class='sl-desc'>객관식 · 보기 제공<br>빈칸 채우기 형식</div>
+      </button>
+      <button class='start-lvl' data-lvl='intermediate'>
+        <div class='sl-name'>중급</div>
+        <div class='sl-desc'>서술형 · 키워드 힌트<br>직접 작성 후 자가채점</div>
+      </button>
+      <button class='start-lvl' data-lvl='advanced'>
+        <div class='sl-name'>고급</div>
+        <div class='sl-desc'>완전 주관식 · 힌트 없음<br>가설검증 AI 피드백</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="hero">
+    <div class="hero-eyebrow">AX 인터랙티브 콘텐츠 공모전 · 신소재공학과</div>
+    <h1>ArF Immersion 복합 결함을<br><em>분석</em>하고 원인을 <em>추론</em>하세요</h1>
+    <p class="hero-desc">ArF Immersion 노광에서 동시에 발생하는 <strong>DOF 이탈 + Watermark</strong> 복합 결함을 3D 단면 모형으로 관찰하고, 공학적 사고로 원인을 추론합니다. 수식(DOF = k₂λ/NA²)과 현장 데이터까지 활용하는 심층 트러블슈팅을 경험하세요.</p>
+  </div>
+
+  <div class="main-grid">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="panel">
+        <div class="panel-header">CASE_SELECT</div>
+        <div class="panel-body" id="caseList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">LAYER_LEGEND</div>
+        <div class="panel-body" id="legendBody"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">PROCESS_CONDITIONS</div>
+        <div class="panel-body" id="condBody"></div>
+      </div>
+    </div>
+
+    <!-- VIEWER -->
+    <div>
+      <div class="viewer-panel">
+        <div class="viewer-header">
+          <div class="viewer-title">3D_CROSS_SECTION_VIEWER</div>
+          <div class="viewer-controls">
+            <button class="vbtn" id="resetBtn">RESET</button>
+            <button class="vbtn" id="xrayBtn">X-RAY</button>
+            <button class="vbtn active" id="rotBtn">AUTO ROT</button>
+          </div>
+        </div>
+        <div class="progress-track" style="margin:8px 16px 0;">
+          <div class="progress-fill" id="progFill" style="width:0%"></div>
+        </div>
+        <canvas id="threeCanvas"></canvas>
+        <div class="viewer-hint">마우스 드래그로 회전 · 휠로 확대·축소 · 우클릭 드래그로 이동</div>
+        <div class="severity-row">
+          <span class="severity-label">결함 강도</span>
+          <input type='range' id='sevSlider' min='0' max='100' value='70' class='severity-slider'>
+          <span class="severity-val" id="sevVal">70%</span>
+        </div>
+      </div>
+
+      <div class='panel observe-panel'>
+        <div class='panel-header'>관찰 포인트 · VISUAL CLUES</div>
+        <div class='panel-body'>
+          <div class='observe-guide'>마우스로 단면을 <b>돌려가며</b> 아래 이상 징후를 직접 찾아보세요. 진단의 출발점입니다.</div>
+          <div class='clues-list' id='cluesChips'></div>
+          <div class='observe-legend'>
+            <span class='ol-item'><span class='ol-dot red'></span>빨강 표식 = 결함 지점</span>
+            <span class='ol-item'><span class='ol-dot green'></span>초록·파랑 표식 = 정상 비교군</span>
+            <span class='observe-count' id='cluesCount'>0 / 0 확인</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid" id="bottomContent">
+        <div class="panel">
+          <div class="panel-header">SITUATION</div>
+          <div class="panel-body">
+            <div class="situation-text" id="situationText"></div>
+            <div id="formulaBox" style="margin-top:10px;padding:9px 12px;background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.18);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;font-family:var(--mono);font-size:11.5px;color:var(--text);line-height:1.7;display:none;">
+              <span style="color:var(--text3);font-size:10px;display:block;margin-bottom:3px;letter-spacing:0.08em;">KEY FORMULA</span>
+              DOF = k₂ · λ / NA²<br>
+              <span style="color:var(--text2);font-size:11px;">= 0.745 × 193 nm / (1.32)² ≈ <b style="color:var(--accent)">82 nm</b></span><br>
+              <span style="color:var(--text3);font-size:10.5px;">웨이퍼 단차 30 nm = DOF 마진의 37% 소모</span>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">TROUBLESHOOTING</div>
+          <div class="panel-body">
+            <div class="step-bar" id="stepBar"></div>
+            <div class="quiz-q" id="stepQ"></div>
+            <div id="choicesWrap"></div>
+            <div id='textWrap' style='display:none;'>
+              <div class='kw-hint' id='kwHint'></div>
+              <textarea id='answerInput' class='answer-input' rows='3' placeholder='여기에 답을 서술해 보세요...'></textarea>
+              <div class='step-actions'>
+                <button class='ai-btn sm' id='aiCheckBtn'>AI 피드백</button>
+                <button class='ai-btn sm ghost' id='revealBtn'>모범답안 ▸</button>
+              </div>
+              <div class='model-answer' id='modelAnswer'></div>
+              <div class='self-mark' id='selfMark' style='display:none;'>
+                <span class='self-mark-label'>스스로 채점:</span>
+                <button class='mark-btn ok' id='markRight'>맞음</button>
+                <button class='mark-btn no' id='markWrong'>아쉬움</button>
+              </div>
+            </div>
+            <div class="feedback-box" id="feedbackBox"></div>
+            <div class='hint-wrap'>
+              <button class='hint-btn' id='hintBtn'>▸ 힌트</button>
+              <div class='hint-out' id='hintOut'></div>
+            </div>
+            <button class="next-btn" id="stepNextBtn">다음 단계 →</button>
+            <button class="next-btn" id="nextBtn">NEXT CASE →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel ai-panel" id="askPanel">
+        <div class="panel-header">AI_ASSIST · 무엇이든 질문</div>
+        <div class="panel-body">
+          <div class="ai-intro">막히는 부분이 있으면 바로 물어보세요. 현재 케이스 맥락을 알고 답합니다. <b>정답을 통째로 알려주기보다</b> 이해를 돕는 방향으로 안내합니다.</div>
+          <div class="chat-log" id="chatLog"></div>
+          <div class="chat-row">
+            <input type="text" class="chat-input" id="chatInput" placeholder="예: 정재파가 왜 측벽에만 생기나요?">
+            <button class="ai-btn" id="chatSendBtn">전송</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel ai-panel" id="notePanel" style="display:none;">
+        <div class="panel-header">MY_NOTE · AI 학습 노트</div>
+        <div class="panel-body">
+          <div class="ai-intro">이 트러블슈팅에서의 <b>당신의 사고 흐름과 질문</b>을 바탕으로, 나만의 결함 분석 트리와 핵심 개념 요약 노트를 만들어 드립니다.</div>
+          <button class="ai-btn" id="noteBtn">▸ 내 분석 노트 생성</button>
+          <div class="note-out" id="noteOut"></div>
+          <div class="ai-row" id="noteActions" style="display:none;">
+            <button class="ai-btn" id="noteCopyBtn">복사</button>
+            <button class="ai-btn" id="noteDownloadBtn">.txt 저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-screen" id="scoreScreen">
+        <div class="score-big" id="scoreBig"></div>
+        <div class="score-sub" id="scoreSub"></div>
+        <button class="restart-btn" onclick="restart()">RESTART</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const CASES = [
+  {
+    tag: 'ArF Immersion · 복합 결함',
+    title: 'Watermark + DOF 이탈 복합 결함',
+    conditions: [
+      ['공정','ArF Immersion 투영 노광'],
+      ['파장 / NA','193 nm / 1.32'],
+      ['침지 매질','초순수 (DI water, n≈1.44)'],
+      ['PR','Positive CAR, 90 nm (소수성 Topcoat 미적용)'],
+      ['BARC','Si-BARC 적용 (하부 반사 제어)'],
+      ['웨이퍼 단차','CMP 후 잔여 단차 ~30 nm'],
+      ['Focus Offset','+65 nm (DOF 한계 이탈)'],
+    ],
+    legend: [
+      {color:'#6a7f98', label:'Si 기판'},
+      {color:'#2da882', label:'Si-BARC (반사방지막)'},
+      {color:'#3a8fff', label:'PR — 정상 (수직 측벽)'},
+      {color:'#d9663a', label:'PR — DOF 이탈 (테이퍼+라운딩)'},
+      {color:'#1a8cd8', label:'잔류 물방울 (Watermark 영역)'},
+      {color:'#e24b4a', label:'결함 지점 마커'},
+    ],
+    situation: `ArF 액침 노광(NA=1.32) 후 웨이퍼 단면 SEM 관찰 결과, <strong>두 가지 결함이 동시에 확인</strong>됨.<br>
+① 일부 영역 PR: 상단 라운딩 + 측벽 테이퍼 + Footing — 수직 측벽 기준 대비 CD 편차 약 12 nm<br>
+② 침지 매질(물) 잔류 부위: PR 표면 국소 변색 + 현상 후 CD 변동 — Watermark 의심<br>
+동일 웨이퍼 내 일부 영역은 정상, 일부는 결함. <strong>패턴 위치에 따른 CD 산포(CDU)</strong>가 크게 증가함.`,
+    photo: null,
+    photoCaption: '',
+    photoHint: '권장: ArF immersion DOF 이탈 + Watermark 동반 SEM 단면 (FEM wafer)',
+    equipment: [
+      {tool:'CD-SEM + FEM (Focus-Exposure Matrix)', use:'포커스 위치별 CD 변화 / Bossung 곡선으로 DOF 마진 정량화'},
+      {tool:'단면 SEM (X-SEM)', use:'상단 라운딩 · Footing · 테이퍼각 직접 측정'},
+      {tool:'OCD (스캐터로메트리)', use:'인라인 CD/측벽각/높이 비파괴 프로파일 재구성'},
+      {tool:'접촉각 측정기 + DI water 시험', use:'PR 표면 소수성 저하 여부 확인 → Watermark 취약성 진단'},
+    ],
+    typeQ: {
+      q: '단면 SEM에서 일부 PR 라인은 수직 측벽인데, 다른 라인은 상단 라운딩 + 측벽 테이퍼 + Footing을 보입니다. 동시에 PR 표면에 물방울 흔적(얼룩)이 관찰됩니다. 이 복합 결함에 관여하는 공정 단계를 모두 고르세요.',
+      choices: [
+        { text: '노광 초점 이탈(DOF 초과)과 침지 매질 잔류(Watermark) — 노광 단계의 두 가지 문제', correct: true },
+        { text: '현상 시간 과다 + 린스액 불량 — 현상 단계 단독 문제', correct: false },
+        { text: 'BARC 반사율 과다 + PEB 온도 저하 — 코팅·베이크 단계 문제', correct: false },
+        { text: '마스크 CD 오류 + 스캐너 배율 오차 — 설계·정렬 단계 문제', correct: false },
+      ],
+      ok: '정확합니다. 테이퍼+라운딩+Footing은 DOF 이탈의 전형적 프로파일이며, Watermark는 침지 매질 잔류로 발생합니다. 두 결함이 동시에 나타나는 것은 "웨이퍼 단차에 의한 국소 DOF 이탈"과 "PR 소수성 부족으로 인한 물 흡수"가 복합된 ArF immersion 특유의 상황입니다.',
+      no: '힌트: 측벽 형상(테이퍼·라운딩·Footing)은 빛이 PR 두께 전체에 걸쳐 선명하게 맺히지 못할 때 나타납니다. 또한 침지 매질(물)이 공정에 사용됨을 기억하세요. 이 두 단서가 각각 어떤 공정 문제를 가리키는지 생각해 보세요.',
+    },
+    equipQ: {
+      q: 'DOF 이탈 정도를 정량화하고 Watermark로 인한 CD 변동을 구별하기 위한 가장 효과적인 계측 조합은?',
+      choices: [
+        { text: 'CD-SEM (FEM 분석으로 Bossung 곡선 도출) + 접촉각 측정기 (PR 소수성 확인)', correct: true },
+        { text: 'XRD (결정성 분석) + 4점 탐침 (면저항 측정)', correct: false },
+        { text: 'AFM (표면 거칠기) + 엘립소미터 (막 두께)', correct: false },
+        { text: 'TEM (단면 나노구조) + SIMS (불순물 깊이 프로파일)', correct: false },
+      ],
+      ok: 'CD-SEM으로 포커스 오프셋별 CD 변화를 측정해 Bossung 곡선을 그리면 실제 DOF 마진을 정량화할 수 있습니다. 접촉각 측정기로 PR 표면 소수성이 설계값(보통 >70°) 이하로 떨어졌는지 확인하면 Watermark 취약성을 진단할 수 있습니다.',
+      no: 'XRD·4점 탐침은 결정성·전기저항 측정용입니다. AFM은 표면 거칠기 측정에 유용하지만 DOF 정량화엔 부적합합니다. TEM/SIMS는 나노 단면·불순물용으로 여기 맥락과 다릅니다.',
+    },
+    causeQ: '이 복합 결함(DOF 이탈 + Watermark)의 가장 정확한 복합 원인은?',
+    choices: [
+      { text: '웨이퍼 단차(~30 nm)로 인한 국소 DOF 초과 + PR 소수성 부족으로 침지 매질 흡수 및 잔류', correct: true },
+      { text: 'NA가 너무 낮아 해상도가 부족하고, 현상액 농도가 낮아 PR이 완전히 용해되지 않았다', correct: false },
+      { text: 'PEB 온도 과다로 산이 과확산되고, 스핀 코팅 속도 불안정으로 PR 두께가 불균일했다', correct: false },
+      { text: 'BARC 반사율이 높아 정재파가 형성되고, 마스크 CD 오차로 패턴 크기가 달라졌다', correct: false },
+    ],
+    feedbackOK: `정확합니다! 두 원인이 시너지를 만드는 구조입니다.\n\n【DOF 이탈 원인】 CMP 후 잔여 단차 ~30 nm가 존재하는 상황에서 NA=1.32는 DOF = k₂·λ/NA² ≈ 0.745 × 193 / (1.32)² ≈ 82 nm로 매우 좁습니다. 웨이퍼 단차가 이 DOF의 절반에 가까우므로 단차 위/아래 영역에서 국소적으로 포커스가 이탈해 테이퍼+라운딩+Footing 프로파일이 형성됩니다.\n\n【Watermark 원인】 Topcoat 미적용 + PR 소수성 부족 → 침지 매질(물)이 PR 표면에 흡착·잔류 → 국소적 현상 반응 변화 → CD 산포 증가\n\n해결: ① CMP 평탄화 강화로 잔여 단차 최소화 ② 소수성 Topcoat 적용 또는 고소수성 PR 선택 ③ Bossung 윈도우 내 포커스 운용 ④ 침지 매질 순환 속도 최적화`,
+    feedbackNo: `힌트: 결함 형상을 두 그룹으로 분리해 생각해 보세요. ① 상단 라운딩+테이퍼+Footing은 "상이 또렷하게 맺히지 못할 때"의 전형입니다. NA가 크면 DOF가 좁아지는 공식(DOF = k₂·λ/NA²)을 떠올려 보세요. ② 물방울 흔적은 침지 노광 매질과 PR 표면 성질의 상호작용에서 비롯됩니다.`,
+    solutionQ: {
+      q: 'DOF 이탈과 Watermark를 동시에 개선하는 가장 효과적인 처방 조합은?',
+      choices: [
+        { text: 'CMP로 웨이퍼 단차 최소화 + 소수성 Topcoat 적용 + Bossung 윈도우 내 포커스 운용', correct: true },
+        { text: 'NA를 더 높여 해상도를 향상시키고, 현상 시간을 단축한다', correct: false },
+        { text: 'PEB 온도를 낮추어 산 확산을 억제하고, BARC를 제거한다', correct: false },
+        { text: 'PR 두께를 2배로 늘리고, 노광량(Dose)을 줄인다', correct: false },
+      ],
+      ok: 'CMP로 단차를 줄여 DOF 마진을 확보하고, 소수성 Topcoat으로 침지 매질 접촉을 차단하며, FEM으로 측정한 Bossung 윈도우 중심에서 운용하는 것이 표준 처방입니다.',
+      no: 'NA를 높이면 해상도는 올라가지만 DOF가 더 좁아져 문제가 악화됩니다. PEB 온도 저하·BARC 제거·두께 증가는 이 결함의 근본 원인(단차, 소수성)을 해결하지 못합니다.',
+    },
+    clues: [
+      '일부 PR만 테이퍼·라운딩 — 위치에 따른 불균일 (단차 의심)',
+      '상단 CD 축소 + Footing 동반 (초점 이탈 전형 패턴)',
+      'PR 표면 국소 얼룩 — Watermark 흔적',
+      '동일 웨이퍼 내 CDU 급증 (면내 산포 악화)',
+      'NA=1.32 → DOF ≈ 82 nm (단차 30 nm가 마진의 37%)',
+    ],
+    hints: {
+      mechanism: 'DOF=k₂·λ/NA², 웨이퍼 단차 → 국소 포커스 이탈 / PR 소수성 ↓ → 침지 매질 잔류 → Watermark',
+      field: 'ArF immersion NA>1.2 고해상도 공정에서 CMP 잔여 단차 + Topcoat 미적용 PR 조합 시 발생. N5/N3 BEOL 메탈 레이어에서 보고됨',
+    },
+    commonErrors: [
+      { wrong: '현상 시간 부족 때문이다', rebut: '현상 부족이면 CD가 커지거나 Scum이 남습니다. 테이퍼+라운딩은 "상 흐림(defocus)"의 고유 패턴이라 현상 조건만으로는 재현되지 않습니다.' },
+      { wrong: 'NA가 너무 커서 해상도가 지나치게 높아진 것이다', rebut: 'NA 증가는 해상도를 높이지만 DOF를 좁힙니다. 문제는 "해상도가 높아서"가 아니라, 좁아진 DOF 안에 웨이퍼 단차가 포함되어 버린 것입니다.' },
+      { wrong: 'BARC 반사가 남아 정재파가 생긴 것이다', rebut: '정재파라면 측벽에 "주기적 물결"이 보여야 합니다. 여기서는 측벽이 경사진(테이퍼) 형태로, 이는 공중상 대비 저하의 증거입니다.' },
+    ],
+    build: buildArFImmersion,
+  },
+];
+
+// ── ArF Immersion 복합 결함 3D 빌더 ──────────────────────────────────────
+// 구조: Si기판 → Si-BARC → PR라인(정상/결함/Watermark) + 침지매질 잔류 표현
+function buildArFImmersion(xr, sev) {
+  const s = (typeof sev === 'number' && !isNaN(sev)) ? sev : 0.7;
+  const op = xr ? 0.18 : 1;
+
+  // ── 기판 & BARC ──
+  addBox(8.2, 0.65, 3.2, 0, -1.85, 0, mat(0x6a7f98, op));       // Si 기판
+  addBox(8.2, 0.18, 3.2, 0, -1.42, 0, mat(0x2da882, op));       // Si-BARC
+
+  // ── 수직 정상 PR 라인 (우측 2개) ──
+  const prH = 0.85;
+  const baseY = -1.33 + prH / 2;
+  addBox(0.9, prH, 2.6,  2.4, baseY, 0, mat(0x3a8fff, op));
+  addBox(0.9, prH, 2.6,  3.6, baseY, 0, mat(0x3a8fff, op));
+
+  // ── DOF 이탈 PR 라인 (중앙) — 테이퍼 + 상단 라운딩 표현 ──
+  // 강도에 따라 테이퍼 심도·라운딩 크기 변화
+  const taperBot  = lerp(0.92, 1.45, s);  // 바닥 폭
+  const taperMid  = lerp(0.88, 1.15, s);
+  const taperTop  = lerp(0.76, 0.62, s);  // 상단 좁아짐
+  const footW     = lerp(0.94, 1.6,  s);  // footing 폭
+  const rndRy     = lerp(0.06, 0.28, s);  // 라운딩 반경 y
+  const rndRx     = lerp(0.30, 0.52, s);  // 라운딩 반경 x
+
+  const cx = 0.0;
+  // footing
+  addBox(footW, 0.10, 2.55, cx, -1.33 + 0.05, 0, mat(0xd9663a, op));
+  // 하단 슬랩
+  addBox(taperBot, 0.20, 2.5, cx, -1.23 + 0.10, 0, mat(0xd9663a, op));
+  addBox(taperMid, 0.20, 2.5, cx, -1.03 + 0.10, 0, mat(0xd9663a, op));
+  addBox(lerp(0.86, 0.95, s), 0.18, 2.5, cx, -0.83 + 0.09, 0, mat(0xd9663a, op));
+  addBox(lerp(0.82, 0.82, s), 0.16, 2.5, cx, -0.65 + 0.08, 0, mat(0xd9663a, op));
+  addBox(taperTop,  0.14, 2.5, cx, -0.49 + 0.07, 0, mat(0xd9663a, op));
+  // 상단 라운딩 (돔)
+  addDome(rndRx, rndRy, 1.25, cx, -0.35 + rndRy, 0, 0xd9663a, op);
+
+  // 결함 마커 (빨간 화살표)
+  addCone(0.10, 0.30, cx - 1.4, -0.50, 1.6, 0xe24b4a, 0, Math.PI / 2);
+  addCone(0.10, 0.30, cx + 1.4, -0.50, 1.6, 0xe24b4a, 0, -Math.PI / 2);
+
+  // ── Watermark 영역 PR 라인 (좌측) ──
+  // 강도에 따라 PR 표면이 침식되어 두께 감소 + 표면 불균일 표현
+  const wmH    = lerp(prH, prH * 0.65, s);   // 두께 감소
+  const wmW    = lerp(0.90, 1.12, s);          // 폭 약간 변화
+  const wmY    = -1.33 + wmH / 2;
+  addBox(wmW, wmH, 2.6, -2.4, wmY, 0, mat(0x1a8cd8, xr ? 0.12 : lerp(0.85, 0.55, s)));
+
+  // 물방울 잔류 표현 — 표면 위에 반구형 물 방울
+  const dropCnt = Math.round(lerp(1, 4, s));
+  const dropXs  = [-2.7, -2.2, -1.7, -2.45];
+  for (let i = 0; i < dropCnt; i++) {
+    const dx = dropXs[i];
+    const dy = wmY + wmH / 2 + 0.08;
+    addDome(lerp(0.07, 0.13, s), lerp(0.05, 0.09, s), 0.3, dx, dy, 0, 0x67b8f0, xr ? 0.08 : 0.75);
+  }
+  // Watermark 결함 마커
+  addCone(0.09, 0.28, -2.4, wmY + wmH / 2 + 0.5, 1.6, 0xe24b4a, Math.PI);
+
+  // ── 웨이퍼 단차 표현 — BARC/기판 위 좌측이 약간 높음 ──
+  const stepH = lerp(0.01, 0.04, s);
+  addBox(3.5, stepH, 3.21, -2.3, -1.33 - 0.01, 0, mat(0x2da882, xr ? 0.1 : 0.55));
+
+  // ── 정상 마커 (초록) ──
+  addCone(0.09, 0.28, 2.4, baseY + prH / 2 + 0.3, 1.6, 0x2da882, Math.PI);
+  addCone(0.09, 0.28, 3.6, baseY + prH / 2 + 0.3, 1.6, 0x2da882, Math.PI);
+}
+
+// THREE.JS SETUP
+const canvas = document.getElementById('threeCanvas');
+const W = canvas.parentElement.offsetWidth || 680;
+const H = 420;
+canvas.width = W;
+canvas.height = H;
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0xeef2f7, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xeef2f7, 18, 30);
+
+const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+camera.position.set(6, 5, 9);
+camera.lookAt(0, 0, 0);
+
+const amb = new THREE.AmbientLight(0xffffff, 0.55);
+scene.add(amb);
+const dir1 = new THREE.DirectionalLight(0xffffff, 0.8);
+dir1.position.set(6, 10, 6);
+scene.add(dir1);
+const dir2 = new THREE.DirectionalLight(0xbcd0ee, 0.3);
+dir2.position.set(-5, 2, -4);
+scene.add(dir2);
+
+// Responsive viewer resize (3D column changes width on desktop<->mobile)
+function resizeViewer() {
+  const w = canvas.parentElement.offsetWidth || W;
+  renderer.setSize(w, H);
+  camera.aspect = w / H;
+  camera.updateProjectionMatrix();
+}
+let _rzTimer;
+window.addEventListener('resize', () => { clearTimeout(_rzTimer); _rzTimer = setTimeout(resizeViewer, 150); });
+
+// Grid
+const gridHelper = new THREE.GridHelper(20, 20, 0xc2ccd9, 0xdbe2ec);
+gridHelper.position.y = -2.2;
+scene.add(gridHelper);
+
+let group = new THREE.Group();
+scene.add(group);
+
+// Interaction
+let isDrag = false, isRightDrag = false;
+let prevX = 0, prevY = 0;
+let rotX = 0.35, rotY = 0.45;
+let panX = 0, panY = 0;
+let autoRot = true;
+let xray = false;
+let current = 0, totalCorrect = 0, stepIndex = 0, caseSteps = [], caseLog = null, stepAnswered = false, chatHistory = [];
+let severity = 0.7;
+let level = 'beginner';
+let hintLevel = 0;
+
+canvas.addEventListener('mousedown', e => {
+  isDrag = e.button === 0;
+  isRightDrag = e.button === 2;
+  prevX = e.clientX; prevY = e.clientY;
+  autoRot = false;
+  document.getElementById('rotBtn').classList.remove('active');
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('mouseup', () => { isDrag = false; isRightDrag = false; });
+window.addEventListener('mousemove', e => {
+  if (isDrag) {
+    rotY += (e.clientX - prevX) * 0.007;
+    rotX += (e.clientY - prevY) * 0.007;
+    rotX = Math.max(-1.3, Math.min(1.3, rotX));
+  }
+  if (isRightDrag) {
+    panX -= (e.clientX - prevX) * 0.01;
+    panY += (e.clientY - prevY) * 0.01;
+  }
+  prevX = e.clientX; prevY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  camera.position.multiplyScalar(1 + e.deltaY * 0.001);
+}, { passive: false });
+
+// Touch
+let tPrevX = 0, tPrevY = 0;
+canvas.addEventListener('touchstart', e => { tPrevX = e.touches[0].clientX; tPrevY = e.touches[0].clientY; autoRot = false; });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  rotY += (e.touches[0].clientX - tPrevX) * 0.01;
+  rotX += (e.touches[0].clientY - tPrevY) * 0.01;
+  rotX = Math.max(-1.3, Math.min(1.3, rotX));
+  tPrevX = e.touches[0].clientX; tPrevY = e.touches[0].clientY;
+}, { passive: false });
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  rotX = 0.35; rotY = 0.45; panX = 0; panY = 0;
+  camera.position.set(6, 5, 9);
+});
+document.getElementById('xrayBtn').addEventListener('click', () => {
+  xray = !xray;
+  document.getElementById('xrayBtn').classList.toggle('active', xray);
+  clearGroup();
+  CASES[current].build(xray, severity);
+});
+document.getElementById('rotBtn').addEventListener('click', () => {
+  autoRot = !autoRot;
+  document.getElementById('rotBtn').classList.toggle('active', autoRot);
+});
+const sevSlider = document.getElementById('sevSlider');
+if (sevSlider) {
+  sevSlider.addEventListener('input', () => {
+    severity = sevSlider.value / 100;
+    document.getElementById('sevVal').textContent = sevSlider.value + '%';
+    clearGroup();
+    CASES[current].build(xray, severity);
+  });
+}
+
+// Material helper
+function num(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0.7; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function mat(hex, opacity = 1) {
+  return new THREE.MeshPhongMaterial({
+    color: hex,
+    transparent: opacity < 1,
+    opacity,
+    side: THREE.DoubleSide,
+    shininess: 40,
+  });
+}
+function addBox(w, h, d, x, y, z, material) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.set(x, y, z);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 })
+  );
+  edges.position.copy(mesh.position);
+  group.add(edges);
+  return mesh;
+}
+function addCone(r, h, x, y, z, hex, rx = 0, rz = 0) {
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 10), new THREE.MeshPhongMaterial({ color: hex }));
+  m.position.set(x, y, z);
+  m.rotation.x = rx; m.rotation.z = rz;
+  group.add(m);
+}
+
+function buildCase0(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7, 0.9, 3.2, 0, -1.35, 0, mat(0x6a7f98, op));
+  addBox(7, 0.3, 3.2, 0, -0.75, 0, mat(0x2a9872, op));
+  // normal right pillar
+  addBox(1.1, 0.75, 2.6, 1.6, -0.1, 0, mat(0x3a8fff, op));
+  addBox(1.1, 0.22, 2.6, 1.6, 0.38, 0, mat(0xc8902a, op));
+  // defect left pillar (tilt grows with severity)
+  const lm = addBox(0.95, 0.75, 2.6, -1.65, -0.1, 0, mat(0xff4444, op));
+  lm.rotation.z = lerp(0.03, 0.34, s);
+  addBox(0.95, 0.22, 2.6, -1.65, 0.38, 0, mat(0xc8902a, op));
+  addCone(0.12, 0.4, -2.6, 0.1, 0, 0xe24b4a, 0, -Math.PI / 2);
+}
+
+function buildCase1(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(8.5, 0.3, 3.2, 0, -1.8, 0, mat(0x6a7f98, op));
+  // dense trenches (shallow, fixed)
+  [-3.0, -1.7, -0.4].forEach(x => {
+    addBox(0.6, 1.0, 2.6, x, -1.1, 0, mat(0x6a7f98, op));
+    addBox(0.48, 0.95, 2.4, x, -1.12, 0, mat(0x1a2535, xr ? 0.08 : 0.9));
+    addBox(0.6, 0.22, 2.6, x, -0.48, 0, mat(0xc8902a, op));
+  });
+  // isolated trench (depth grows with severity -> bigger microloading gap)
+  const isoH = lerp(1.05, 1.75, s);
+  addBox(0.8, isoH, 2.6, 2.5, -0.02 - isoH / 2, 0, mat(0x6a7f98, op));
+  const isoVH = isoH - 0.05;
+  addBox(0.65, isoVH, 2.4, 2.5, -0.05 - isoVH / 2, 0, mat(0x0d1822, xr ? 0.08 : 0.92));
+  addBox(0.8, 0.22, 2.6, 2.5, -0.48, 0, mat(0xc8902a, op));
+  addCone(0.09, 0.3, -1.7, -1.65, 1.8, 0xff4444);
+  addCone(0.09, 0.3, 2.5, -0.02 - isoH + 0.15, 1.8, 0x2da882, Math.PI);
+}
+
+function buildCase2(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7, 0.7, 3.2, 0, -1.15, 0, mat(0x6a7f98, op));
+  // etched SiO2 sides
+  addBox(2.2, 0.35, 3.2, -2.8, -0.62, 0, mat(0x2266bb, op));
+  addBox(2.2, 0.35, 3.2, 2.8, -0.62, 0, mat(0x2266bb, op));
+  // remaining SiO2 core narrows as undercut grows
+  const coreW = lerp(1.95, 1.0, s);
+  const prW = 2.1;
+  const uc = (prW - coreW) / 2;
+  addBox(coreW, 0.35, 3.2, 0, -0.62, 0, mat(0x2da882, op));
+  addBox(prW, 0.28, 3.2, 0, -0.24, 0, mat(0xc8902a, op));
+  addBox(uc, 0.35, 3.21, coreW / 2 + uc / 2, -0.62, 0, mat(0xff3333, xr ? 0.1 : 0.6));
+  addBox(uc, 0.35, 3.21, -(coreW / 2 + uc / 2), -0.62, 0, mat(0xff3333, xr ? 0.1 : 0.6));
+  addCone(0.1, 0.3, -1.4, -0.62, 1.8, 0xff4444, 0, Math.PI / 2);
+  addCone(0.1, 0.3, 1.4, -0.62, 1.8, 0xff4444, 0, -Math.PI / 2);
+}
+
+// box that tilts mesh AND its edge outline together (for leaning lines)
+function addTiltedBox(w, h, d, x, y, z, material, tiltZ) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.set(x, y, z);
+  mesh.rotation.z = tiltZ;
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 })
+  );
+  edges.position.copy(mesh.position);
+  edges.rotation.z = tiltZ;
+  group.add(edges);
+  return mesh;
+}
+// squished sphere = rounded resist cap
+function addDome(rx, ry, rz, x, y, z, hex, op) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), mat(hex, op));
+  m.scale.set(rx, ry, rz);
+  m.position.set(x, y, z);
+  group.add(m);
+  return m;
+}
+
+// LITHO — 정재파(standing wave): 좌 물결 측벽(결함) vs 우 수직 측벽(정상)
+function buildLithoStanding(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.7, 3.2, 0, -1.7, 0, mat(0x6a7f98, op));   // Si 기판
+  addBox(7.2, 0.28, 3.2, 0, -1.2, 0, mat(0x8a9bb5, op));  // 고반사 하부막
+  const slabH = 0.17, n = 9, base = -1.0;
+  const amp = lerp(0.015, 0.3, s);
+  // 좌측: 정재파 진폭이 강도에 따라 커짐
+  for (let i = 0; i < n; i++) {
+    const w = 1.25 + amp * Math.sin(i * 1.7);
+    addBox(w, slabH, 2.5, -1.85, base + i * slabH, 0, mat(0xd9663a, op));
+  }
+  addCone(0.1, 0.28, -3.0, base + 1.5 * slabH, 1.6, 0xff5555, 0, -Math.PI / 2);
+  addCone(0.1, 0.28, -3.0, base + 4.5 * slabH, 1.6, 0xff5555, 0, -Math.PI / 2);
+  addCone(0.1, 0.28, -3.0, base + 7.5 * slabH, 1.6, 0xff5555, 0, -Math.PI / 2);
+  // 우측: 매끈한 수직 측벽
+  addBox(1.25, slabH * n, 2.5, 1.85, base + (slabH * n) / 2 - slabH / 2, 0, mat(0xc8902a, op));
+}
+
+// LITHO — 디포커스(DOF 이탈): 좌 테이퍼+라운딩(결함) vs 우 수직(정상)
+function buildLithoDefocus(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.7, 3.2, 0, -1.7, 0, mat(0x6a7f98, op));    // Si 기판
+  addBox(7.2, 0.22, 3.2, 0, -1.24, 0, mat(0x2da882, op));  // BARC
+  // 우측: 초점 일치 — 수직 측벽
+  addBox(1.2, 1.3, 2.5, 1.9, -0.45, 0, mat(0x3a8fff, op));
+  // 좌측: 강도가 커질수록 footing 넓고 상단 더 좁아지고 둥글어짐
+  const footW = lerp(1.25, 1.75, s);
+  const wt = lerp(1.15, 0.6, s);
+  addBox(footW, 0.18, 2.5, -1.9, -1.0, 0, mat(0xd9663a, op));
+  [0, 1, 2, 3].forEach(k => {
+    const w = lerp(1.3, wt, k / 3);
+    addBox(w, 0.26, 2.5, -1.9, -0.82 + k * 0.26, 0, mat(0xd9663a, op));
+  });
+  addDome(lerp(0.32, 0.5, s), lerp(0.12, 0.32, s), 1.25, -1.9, 0.1, 0, 0xd9663a, op);
+  addCone(0.1, 0.28, 1.9, 0.5, 1.6, 0x2da882, Math.PI);
+  addCone(0.1, 0.28, -1.9, 0.5, 1.6, 0xff5555, Math.PI);
+}
+
+// LITHO — 패턴 붕괴(collapse): 고종횡비 라인 일부가 기울어 맞닿음
+function buildLithoCollapse(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.5, 3.0, 0, -1.75, 0, mat(0x6a7f98, op)); // Si 기판
+  const lh = 1.75, lw = 0.32, baseY = -0.6;
+  const k = lerp(0.1, 1.25, s); // 강도가 커질수록 더 많이 기울어 맞닿음
+  const lines = [
+    [-2.5, 0, 0x3a8fff],
+    [-1.5, 0.34, 0xd9663a],
+    [-0.55, -0.36, 0xd9663a],
+    [0.9, 0, 0x3a8fff],
+    [2.2, 0.22, 0xd9663a],
+  ];
+  lines.forEach(([x, tilt0, color]) => {
+    const tilt = tilt0 * k;
+    const xc = x - (lh / 2) * Math.sin(tilt);
+    addTiltedBox(lw, lh, 2.5, xc, baseY, 0, mat(color, op), tilt);
+  });
+}
+
+// LITHO — 푸팅(footing): 좌 하단 발(결함) vs 우 수직(정상)
+function buildLithoFooting(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.7, 3.2, 0, -1.7, 0, mat(0x6a7f98, op));
+  addBox(7.2, 0.22, 3.2, 0, -1.24, 0, mat(0x2da882, op));
+  const xL = -1.9, xR = 1.9;
+  addBox(1.15, 1.25, 2.5, xR, -0.25, 0, mat(0x3a8fff, op));
+  addBox(1.15, 1.0, 2.5, xL, -0.13, 0, mat(0xd9663a, op));
+  const f1 = lerp(1.2, 1.55, s), f2 = lerp(1.25, 1.95, s);
+  addBox(f1, 0.16, 2.5, xL, -0.55, 0, mat(0xd9663a, op));
+  addBox(f2, 0.16, 2.5, xL, -0.71, 0, mat(0xd9663a, op));
+  addBox(0.3, 0.34, 2.55, xL - f2 / 2 + 0.05, -0.63, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addBox(0.3, 0.34, 2.55, xL + f2 / 2 - 0.05, -0.63, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addCone(0.1, 0.28, xL, 0.55, 1.6, 0xff5555, Math.PI);
+  addCone(0.1, 0.28, xR, 0.55, 1.6, 0x2da882, Math.PI);
+}
+
+// LITHO — T-토핑(T-topping): 좌 상단 챙(결함) vs 우 수직(정상)
+function buildLithoTtop(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.7, 3.2, 0, -1.7, 0, mat(0x6a7f98, op));
+  addBox(7.2, 0.22, 3.2, 0, -1.24, 0, mat(0x2da882, op));
+  const xL = -1.9, xR = 1.9;
+  addBox(1.15, 1.25, 2.5, xR, -0.25, 0, mat(0x3a8fff, op));
+  addBox(1.15, 1.0, 2.5, xL, -0.375, 0, mat(0xd9663a, op));
+  const t1 = lerp(1.2, 1.55, s), t2 = lerp(1.25, 1.95, s);
+  addBox(t1, 0.16, 2.5, xL, 0.205, 0, mat(0xd9663a, op));
+  addBox(t2, 0.16, 2.5, xL, 0.365, 0, mat(0xd9663a, op));
+  addBox(0.3, 0.34, 2.55, xL - t2 / 2 + 0.05, 0.30, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addBox(0.3, 0.34, 2.55, xL + t2 / 2 - 0.05, 0.30, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addCone(0.1, 0.28, xL, 0.95, 1.6, 0xff5555, Math.PI);
+  addCone(0.1, 0.28, xR, 0.7, 1.6, 0x2da882, Math.PI);
+}
+
+// LITHO — 스컴(scum): 패턴 바닥의 얇은 현상 잔막
+function buildLithoScum(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.7, 3.2, 0, -1.7, 0, mat(0x6a7f98, op));
+  addBox(7.2, 0.22, 3.2, 0, -1.24, 0, mat(0x2da882, op));
+  const xs = [-2.4, -0.8, 0.8, 2.4];
+  xs.forEach(x => addBox(0.9, 1.05, 2.5, x, -0.3, 0, mat(0xc8902a, op)));
+  const rh = lerp(0.025, 0.16, s), rw = lerp(0.3, 0.62, s);
+  addBox(rw, rh, 2.5, -1.6, -1.13 + rh / 2, 0, mat(0xff3333, xr ? 0.14 : 0.6));
+  addCone(0.1, 0.28, -1.6, -0.15, 1.6, 0xff5555, Math.PI);
+}
+
+// LITHO — 오버레이(overlay): 상부 패턴이 하부 대비 X축으로 밀림
+function buildLithoOverlay(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.6, 3.2, 0, -1.75, 0, mat(0x6a7f98, op));
+  const xs = [-2.2, -0.4, 1.4];
+  const shift = lerp(0.04, 0.72, s);
+  xs.forEach(x => {
+    addBox(1.0, 0.5, 2.6, x, -1.2, 0, mat(0x2266bb, op));
+    addBox(0.05, 1.55, 2.7, x, -0.45, 0, mat(0x888888, xr ? 0.1 : 0.45));
+    addBox(0.85, 0.7, 2.4, x + shift, -0.5, 0, mat(0xd9663a, op));
+  });
+  addCone(0.1, 0.3, 0.6, 0.55, 1.6, 0xff5555, 0, -Math.PI / 2);
+}
+
+// ETCH — 사이드월 보잉(bowing): 트렌치 깊이 중앙부가 바깥으로 불룩
+function buildEtchBowing(xr, sev) {
+  const s = num(sev);
+  const op = xr ? 0.2 : 1;
+  addBox(7.2, 0.45, 3.0, 0, -1.7, 0, mat(0x6a7f98, op));    // 바닥 Si
+  addBox(2.8, 2.3, 3.0, -1.9, -0.55, 0, mat(0x6a7f98, op)); // 좌 Si 벽
+  addBox(2.8, 2.3, 3.0, 1.9, -0.55, 0, mat(0x6a7f98, op));  // 우 Si 벽
+  addBox(2.8, 0.26, 3.0, -1.9, 0.73, 0, mat(0xc8902a, op)); // PR 마스크
+  addBox(2.8, 0.26, 3.0, 1.9, 0.73, 0, mat(0xc8902a, op));
+  const n = 10, slabH = 0.2, base = -1.4, mid = Math.floor(n / 2);
+  const bulge = lerp(0.05, 0.7, s); // 강도가 커질수록 중단부가 더 불룩
+  for (let i = 0; i < n; i++) {
+    const bow = 0.95 + bulge * Math.sin((i / (n - 1)) * Math.PI);
+    addBox(bow, slabH, 2.95, 0, base + i * slabH, 0, mat(0x0d1822, xr ? 0.08 : 0.94));
+  }
+  const midY = base + mid * slabH;
+  const hx = (0.95 + bulge) / 2;
+  addBox(0.18, slabH * 1.4, 2.6, -hx, midY, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addBox(0.18, slabH * 1.4, 2.6, hx, midY, 0, mat(0xff3333, xr ? 0.12 : 0.5));
+  addCone(0.1, 0.3, -1.55, midY, 1.7, 0xff5555, 0, Math.PI / 2);
+  addCone(0.1, 0.3, 1.55, midY, 1.7, 0xff5555, 0, -Math.PI / 2);
+}
+
+function clearGroup() {
+  while (group.children.length) group.remove(group.children[0]);
+}
+
+function updateClueCount() {
+  const items = document.querySelectorAll('#cluesChips .clue-item');
+  const done = document.querySelectorAll('#cluesChips .clue-item.done').length;
+  const el = document.getElementById('cluesCount');
+  if (el) el.textContent = done + ' / ' + items.length + ' 확인';
+}
+function toggleClue(btn) {
+  btn.classList.toggle('done');
+  updateClueCount();
+}
+
+function loadCase(idx) {
+  current = idx;
+  clearGroup();
+  const c = CASES[idx];
+  c.build(xray, severity);
+
+  document.getElementById('progFill').style.width = ((idx / CASES.length) * 100) + '%';
+
+  buildCaseList(idx);
+  buildLegend(c.legend);
+  buildConditions(c.conditions);
+  document.getElementById('situationText').innerHTML = c.situation;
+  const fb2 = document.getElementById('formulaBox');
+  if (fb2) fb2.style.display = 'block';
+  const _clues = c.clues || [];
+  document.getElementById('cluesChips').innerHTML = _clues.map((t, i) =>
+    `<button class='clue-item' onclick='toggleClue(this)'><span class='clue-num'>${i + 1}</span><span class='clue-text'>${t}</span><span class='clue-check'>✓</span></button>`
+  ).join('');
+  updateClueCount();
+
+  caseSteps = buildSteps(c);
+  stepIndex = 0;
+  caseLog = { title: c.title, tag: c.tag, steps: [], chat: [] };
+  renderStep();
+
+  document.getElementById('bottomContent').style.display = '';
+  document.getElementById('scoreScreen').className = 'score-screen';
+  document.getElementById('askPanel').style.display = 'block';
+  document.getElementById('notePanel').style.display = 'none';
+  resetNote();
+  chatHistory = [];
+  renderChat();
+}
+
+function buildCaseList(active) {
+  document.getElementById('caseList').innerHTML = CASES.map((c, i) => `
+    <div class="case-item ${i === active ? 'active' : ''}" onclick="loadCase(${i})">
+      <div class="case-item-tag">${c.tag}</div>
+      <div class="case-item-title">${c.title}</div>
+    </div>
+  `).join('');
+}
+
+function buildLegend(items) {
+  document.getElementById('legendBody').innerHTML = items.map(it => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${it.color};"></div>
+      <span>${it.label}</span>
+    </div>
+  `).join('');
+}
+
+function buildConditions(conds) {
+  document.getElementById('condBody').innerHTML = conds.map(([k, v]) => `
+    <div class="cond-item"><span class="cond-key">${k}</span>${v}</div>
+  `).join('');
+}
+
+function buildSteps(c) {
+  const steps = [];
+  if (c.typeQ) steps.push(Object.assign({ label: '결함 종류' }, c.typeQ));
+  if (c.equipQ) steps.push(Object.assign({ label: '분석 장비' }, c.equipQ));
+  steps.push({ label: '발생 원인', q: c.causeQ || '이 결함의 가장 적절한 발생 원인은?', choices: c.choices, ok: c.feedbackOK, no: c.feedbackNo });
+  if (c.solutionQ) steps.push(Object.assign({ label: '해결 방법' }, c.solutionQ));
+  return steps;
+}
+
+const TOTAL_STEPS = CASES.reduce((n, c) => n + buildSteps(c).length, 0);
+
+function correctText(s) {
+  return (s.choices.find(c => c.correct) || {}).text || '';
+}
+
+function renderStep() {
+  const s = caseSteps[stepIndex];
+  stepAnswered = false;
+  hintLevel = 0;
+  const n = caseSteps.length;
+  document.getElementById('stepBar').innerHTML = caseSteps.map((st, i) =>
+    `<span class='step-pill ${i === stepIndex ? 'on' : ''} ${i < stepIndex ? 'done' : ''}'>${i + 1}. ${st.label}</span>`
+  ).join(`<span class='step-arrow'>›</span>`);
+  document.getElementById('stepQ').innerHTML = `<span class='step-tag'>STEP ${stepIndex + 1} / ${n}</span>` + s.q;
+
+  const fb = document.getElementById('feedbackBox');
+  fb.className = 'feedback-box';
+  fb.textContent = '';
+  document.getElementById('stepNextBtn').className = 'next-btn';
+  document.getElementById('nextBtn').className = 'next-btn';
+  document.getElementById('hintOut').innerHTML = '';
+  const hb = document.getElementById('hintBtn');
+  hb.disabled = false;
+  hb.textContent = '▸ 힌트';
+
+  const cw = document.getElementById('choicesWrap');
+  const tw = document.getElementById('textWrap');
+  if (level === 'beginner') {
+    tw.style.display = 'none';
+    cw.style.display = '';
+    cw.innerHTML = s.choices.map((ch, i) =>
+      `<button class='choice' onclick='chooseStep(${i})'>${String.fromCharCode(65 + i)}. ${ch.text}</button>`
+    ).join('');
+  } else {
+    cw.style.display = 'none';
+    cw.innerHTML = '';
+    tw.style.display = 'block';
+    const ans = document.getElementById('answerInput');
+    ans.value = '';
+    ans.disabled = false;
+    const ma = document.getElementById('modelAnswer');
+    ma.className = 'model-answer';
+    ma.textContent = '';
+    document.getElementById('selfMark').style.display = 'none';
+    document.querySelectorAll('#selfMark .mark-btn').forEach(b => b.disabled = false);
+    const kw = document.getElementById('kwHint');
+    if (level === 'intermediate') {
+      const c = CASES[current];
+      const terms = (c.hints ? c.hints.mechanism : '').split(/[,·]/).map(t => t.trim()).filter(Boolean);
+      kw.style.display = 'flex';
+      kw.innerHTML = `<span class='kw-chip'><b>키워드 힌트</b></span>` + terms.map(t => `<span class='kw-chip'>${t}</span>`).join('');
+    } else {
+      kw.style.display = 'none';
+      kw.innerHTML = '';
+    }
+    const aiBtn = document.getElementById('aiCheckBtn');
+    aiBtn.textContent = (level === 'advanced') ? '가설 검증 ▸' : 'AI 첨삭 ▸';
+    aiBtn.disabled = false;
+  }
+}
+
+function recordAndAdvance(ok, picked, answer) {
+  if (ok) totalCorrect++;
+  const s = caseSteps[stepIndex];
+  caseLog.steps.push({
+    label: s.label,
+    question: s.q.replace(/<[^>]+>/g, ''),
+    picked: picked,
+    correct: ok,
+    answer: answer
+  });
+  const isLast = stepIndex >= caseSteps.length - 1;
+  document.getElementById('stepNextBtn').className = isLast ? 'next-btn' : 'next-btn show';
+  if (isLast) document.getElementById('nextBtn').className = 'next-btn show';
+}
+
+function chooseStep(idx) {
+  if (stepAnswered) return;
+  stepAnswered = true;
+  const s = caseSteps[stepIndex];
+  const btns = document.querySelectorAll('.choice');
+  btns.forEach(b => b.disabled = true);
+  const ok = s.choices[idx].correct;
+  btns[idx].className = 'choice ' + (ok ? 'correct' : 'wrong');
+  if (!ok) s.choices.forEach((ch, i) => { if (ch.correct) btns[i].className = 'choice correct'; });
+  const fb = document.getElementById('feedbackBox');
+  fb.textContent = (ok ? '✓ ' : '✗ ') + (ok ? s.ok : s.no);
+  fb.className = 'feedback-box show ' + (ok ? 'success' : 'fail');
+  recordAndAdvance(ok, s.choices[idx].text, correctText(s));
+}
+
+// ---- 서술형 모드 (중급/고급) ----
+function showModelAnswer() {
+  const s = caseSteps[stepIndex];
+  const ma = document.getElementById('modelAnswer');
+  ma.innerHTML = `<b>모범답안</b> ${escapeHtml(correctText(s))}<br><span style='color:var(--text2)'>${escapeHtml(s.ok)}</span>`;
+  ma.className = 'model-answer show';
+  document.getElementById('selfMark').style.display = 'flex';
+}
+document.getElementById('revealBtn').addEventListener('click', showModelAnswer);
+
+function selfMark(ok) {
+  if (stepAnswered) return;
+  stepAnswered = true;
+  const s = caseSteps[stepIndex];
+  const ans = document.getElementById('answerInput');
+  ans.disabled = true;
+  const fb = document.getElementById('feedbackBox');
+  fb.textContent = (ok ? '✓ 잘했어요. ' : '✗ 다시 정리해 봅시다. ') + s.ok;
+  fb.className = 'feedback-box show ' + (ok ? 'success' : 'fail');
+  document.querySelectorAll('#selfMark .mark-btn').forEach(b => b.disabled = true);
+  recordAndAdvance(ok, ans.value.trim() || '(미작성)', correctText(s));
+}
+document.getElementById('markRight').addEventListener('click', () => selfMark(true));
+document.getElementById('markWrong').addEventListener('click', () => selfMark(false));
+
+document.getElementById('aiCheckBtn').addEventListener('click', async () => {
+  const s = caseSteps[stepIndex];
+  const ans = document.getElementById('answerInput').value.trim();
+  const fb = document.getElementById('feedbackBox');
+  if (!ans) { fb.className = 'feedback-box show fail'; fb.textContent = '먼저 답을 작성해 주세요.'; return; }
+  const c = CASES[current];
+  const btn = document.getElementById('aiCheckBtn');
+  btn.disabled = true;
+  fb.className = 'feedback-box show';
+  fb.innerHTML = `<span class='ai-loading'>Claude가 검토 중…</span>`;
+  const correct = correctText(s);
+  const qtext = s.q.replace(/<[^>]+>/g, '');
+  let prompt;
+  if (level === 'advanced') {
+    const errs = (c.commonErrors || []).map(e => '- 흔한 오해: ' + e.wrong + ' → 반박: ' + e.rebut).join(NL);
+    prompt = '[문제] ' + qtext + NL + '[실제 정답] ' + correct + NL + '[이 케이스의 흔한 오해와 반박]' + NL + errs + NL + NL + '[학생의 답/가설] ' + ans + NL + NL + '학생의 답을 평가하되 정답을 직접 알려주지 마세요. 학생의 가설이 맞다면 무엇이 관찰되어야 하는지와 실제 단서를 대비시켜(그 가설이 맞다면 X가 보여야 하는데 실제로는 Y) 스스로 교정하도록 2~3문장으로 유도하세요.';
+  } else {
+    prompt = '[문제] ' + qtext + NL + '[모범답안 개념] ' + correct + ' / ' + s.ok + NL + NL + '[학생의 답] ' + ans + NL + NL + '학생의 서술을 첨삭해 주세요. 맞게 쓴 부분은 인정하고, 빠진 핵심 키워드나 부정확한 부분을 2~3문장으로 짚어주되 정답 문장을 통째로 받아쓰게 하지는 마세요.';
+  }
+  try {
+    const out = await askClaude([{ role: 'user', content: prompt }], ASSIST_SYS);
+    fb.className = 'feedback-box show';
+    fb.textContent = out;
+  } catch (e) {
+    if (level === 'advanced' && (c.commonErrors || []).length) {
+      fb.className = 'feedback-box show';
+      fb.innerHTML = '<b>가설 점검 (오프라인)</b><br>' + c.commonErrors.map(e => '· 만약 ' + escapeHtml(e.wrong) + ' 이라면? ' + escapeHtml(e.rebut)).join('<br>');
+    } else {
+      fb.className = 'feedback-box show';
+      fb.textContent = '⚠ AI 피드백은 claude.ai 아티팩트에서 작동합니다. 모범답안 보기로 확인해 주세요.';
+    }
+  }
+  btn.disabled = false;
+  document.getElementById('selfMark').style.display = 'flex';
+});
+
+// ---- 단계적 힌트 (막혔을 때) ----
+const HINT_TITLES = ['공정 조건 데이터', '메커니즘 키워드', '유사 현장 사례'];
+document.getElementById('hintBtn').addEventListener('click', () => {
+  if (hintLevel >= 3) return;
+  const c = CASES[current];
+  let body = '';
+  if (hintLevel === 0) body = c.conditions.map(([k, v]) => k + ': ' + v).join(' · ');
+  else if (hintLevel === 1) body = c.hints ? c.hints.mechanism : '';
+  else body = c.hints ? c.hints.field : '';
+  const div = document.createElement('div');
+  div.className = 'hint-item';
+  div.innerHTML = `<b>HINT ${hintLevel + 1} · ${HINT_TITLES[hintLevel]}</b>` + escapeHtml(body);
+  document.getElementById('hintOut').appendChild(div);
+  hintLevel++;
+  const hb = document.getElementById('hintBtn');
+  if (hintLevel >= 3) { hb.disabled = true; hb.textContent = '힌트 모두 사용됨'; }
+  else hb.textContent = `▸ 힌트 더 보기 ${hintLevel}/3`;
+});
+
+// ---- 난이도 선택/전환 ----
+function setLevel(lv) {
+  level = lv;
+  document.querySelectorAll('.lvl-btn').forEach(b => b.classList.toggle('active', b.dataset.lvl === lv));
+  if (caseSteps.length) renderStep();
+}
+document.querySelectorAll('.lvl-btn').forEach(b => b.addEventListener('click', () => setLevel(b.dataset.lvl)));
+document.querySelectorAll('.start-lvl').forEach(b => b.addEventListener('click', () => {
+  setLevel(b.dataset.lvl);
+  document.getElementById('startScreen').classList.remove('show');
+}));
+
+document.getElementById('stepNextBtn').addEventListener('click', () => {
+  if (stepIndex < caseSteps.length - 1) { stepIndex++; renderStep(); }
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (current + 1 >= CASES.length) {
+    document.getElementById('bottomContent').style.display = 'none';
+    document.getElementById('askPanel').style.display = 'none';
+    document.getElementById('notePanel').style.display = 'none';
+    const ss = document.getElementById('scoreScreen');
+    ss.className = 'score-screen show';
+    document.getElementById('scoreBig').textContent = totalCorrect + ' / ' + TOTAL_STEPS;
+    const ratio = totalCorrect / TOTAL_STEPS;
+    document.getElementById('scoreSub').textContent =
+      ratio === 1 ? '\uC644\uBCBD\uD569\uB2C8\uB2E4. \uACF5\uC815 \uD2B8\uB7EC\uBE14\uC288\uD305 \uAC10\uAC01\uC774 \uB6F0\uC5B4\uB0A9\uB2C8\uB2E4.' :
+      ratio >= 0.7 ? '\uC88B\uC2B5\uB2C8\uB2E4. \uD575\uC2EC \uAC1C\uB150\uC744 \uC798 \uC774\uD574\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.' :
+      ratio >= 0.4 ? '\uAD1C\uCC2E\uC2B5\uB2C8\uB2E4. \uD2C0\uB9B0 \uB2E8\uACC4\uC758 \uBA54\uCEE4\uB2C8\uC998\uC744 \uB2E4\uC2DC \uC815\uB9AC\uD574\uBCF4\uC138\uC694.' :
+      '\uB2E4\uC2DC \uD480\uC5B4\uBCF4\uBA70 \uAC01 \uB2E8\uACC4\uC758 \uC6D0\uB9AC\uB97C \uC815\uB9AC\uD574\uBCF4\uC138\uC694.';
+    document.getElementById('progFill').style.width = '100%';
+    buildCaseList(-1);
+  } else {
+    loadCase(current + 1);
+  }
+});
+
+function restart() {
+  totalCorrect = 0;
+  loadCase(0);
+}
+
+// AI — free-ask chat (during case) + end-of-case analysis note. Runs inside claude.ai artifact.
+const NL = String.fromCharCode(10);
+const ASSIST_SYS = '당신은 반도체 포토리소그래피 전공 조교입니다. 학생이 ArF Immersion 노광 공정의 DOF 이탈 + Watermark 복합 결함을 분석 중입니다. 핵심 공식(DOF=k₂·λ/NA², Bossung 곡선, PR 소수성)을 활용해 힌트를 줍니다. 정답을 직접 알려주지 말고 학생이 스스로 추론하도록 원리와 단서를 3~5문장으로 안내합니다. 항상 한국어로, 학부 신소재·반도체 수준에 맞춰 명료하고 따뜻하게 답합니다.';
+const NOTE_SYS = '당신은 반도체 공정 학습 튜터입니다. 학생이 방금 완료한 ArF Immersion DOF 이탈 + Watermark 복합 결함 케이스의 단계별 응답과 질문 기록을 분석합니다. DOF 공식(k₂·λ/NA²), Bossung 곡선, PR 소수성, Watermark 메커니즘을 포함한 사실에 충실한 학습 노트를 작성합니다. 추측·과장 없이 실제 공정 원리에 근거해 한국어로 작성하고, 마크다운 기호는 쓰지 않습니다.';
+let lastNote = '';
+
+async function askClaude(messages, system) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: system,
+      messages: messages,
+    }),
+  });
+  if (!res.ok) throw new Error('API ' + res.status);
+  const data = await res.json();
+  return (data.content || [])
+    .map(b => (b.type === 'text' ? b.text : ''))
+    .filter(Boolean)
+    .join(NL)
+    .trim();
+}
+
+function caseContext(c, correct) {
+  const strip = s => String(s).replace(/<[^>]+>/g, '');
+  const conds = c.conditions.map(([k, v]) => k + ': ' + v).join(', ');
+  const correctChoice = (c.choices.find(ch => ch.correct) || {}).text || '';
+  return [
+    '[공정 결함 케이스]',
+    '제목: ' + c.title + ' (' + c.tag + ')',
+    '공정 조건: ' + conds,
+    '결함 상황: ' + strip(c.situation),
+    '핵심 원인(정답): ' + strip(correctChoice),
+    '학생의 선택 결과: ' + (correct ? '정답을 맞혔습니다.' : '오답을 골랐습니다.'),
+  ].join(NL);
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(new RegExp(String.fromCharCode(34), 'g'), '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// --- 자유 질문 채팅 (케이스 진행 중 언제든) ---
+function renderChat() {
+  const log = document.getElementById('chatLog');
+  if (!chatHistory.length) {
+    log.innerHTML = `<div class='chat-empty'>이 케이스에 대해 궁금한 점을 물어보세요. Claude가 정답 대신 힌트를 줍니다.</div>`;
+    return;
+  }
+  log.innerHTML = chatHistory.map(m =>
+    `<div class='chat-msg ${m.role}'><div class='chat-who'>${m.role === 'user' ? '나' : 'CLAUDE'}</div>${escapeHtml(m.text)}</div>`
+  ).join('');
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('chatSendBtn');
+  const text = input.value.trim();
+  if (!text) return;
+  const c = CASES[current];
+  chatHistory.push({ role: 'user', text: text });
+  caseLog.chat.push({ role: 'user', text: text });
+  chatHistory.push({ role: 'assistant', text: '…' });
+  renderChat();
+  input.value = '';
+  btn.disabled = true;
+  input.disabled = true;
+  const ctx = [
+    '[학생이 지금 보고 있는 결함 케이스]',
+    '제목: ' + c.title + ' (' + c.tag + ')',
+    '공정 조건: ' + c.conditions.map(([k, v]) => k + ': ' + v).join(', '),
+    '결함 상황: ' + String(c.situation).replace(/<[^>]+>/g, ''),
+  ].join(NL);
+  try {
+    const msgs = [];
+    chatHistory.slice(0, -1).forEach(m => {
+      msgs.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text });
+    });
+    msgs[0] = { role: 'user', content: ctx + NL + NL + '학생 질문: ' + msgs[0].content };
+    const out = await askClaude(msgs, ASSIST_SYS);
+    chatHistory[chatHistory.length - 1].text = out;
+    caseLog.chat.push({ role: 'assistant', text: out });
+  } catch (e) {
+    chatHistory[chatHistory.length - 1].text = '⚠ AI 답변은 claude.ai 아티팩트 안에서만 작동합니다. 로컬이나 외부 서버에서는 본인 Anthropic API 키가 필요합니다.';
+  }
+  btn.disabled = false;
+  input.disabled = false;
+  renderChat();
+  input.focus();
+}
+
+document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+});
+
+// --- 케이스 종료 후 나만의 분석 노트 ---
+function resetNote() {
+  lastNote = '';
+  const out = document.getElementById('noteOut');
+  out.className = 'note-out';
+  out.textContent = '';
+  document.getElementById('noteActions').style.display = 'none';
+  const b = document.getElementById('noteBtn');
+  b.style.display = 'inline-block';
+  b.disabled = false;
+  b.textContent = '▸ 내 분석 노트 생성';
+}
+
+function buildNotePrompt() {
+  const c = CASES[current];
+  const conds = c.conditions.map(([k, v]) => k + ': ' + v).join(', ');
+  const stepsTxt = caseLog.steps.map((s, i) =>
+    (i + 1) + ') [' + s.label + '] ' + s.question + NL +
+    '   - 학생 선택: ' + s.picked + ' (' + (s.correct ? '정답' : '오답') + ')' + NL +
+    '   - 정답: ' + s.answer
+  ).join(NL);
+  const chatTxt = caseLog.chat.length
+    ? caseLog.chat.map(m => (m.role === 'user' ? '학생: ' : 'Claude: ') + m.text).join(NL)
+    : '(질문 없음)';
+  return [
+    '[케이스] ' + c.title + ' (' + c.tag + ')',
+    '[공정 조건] ' + conds,
+    '[결함 상황] ' + String(c.situation).replace(/<[^>]+>/g, ''),
+    '',
+    '[학생의 단계별 응답]',
+    stepsTxt,
+    '',
+    '[학생이 도중에 한 질문]',
+    chatTxt,
+    '',
+    '위 기록을 바탕으로 이 학생만의 학습 노트를 작성해주세요. 아래 세 부분으로 나누되, 마크다운 기호는 쓰지 말고 일반 텍스트와 트리 기호(├ └ ·)만 사용하세요.',
+    '',
+    '【결함 분석 트리 — DOF 이탈 + Watermark 복합】',
+    '두 결함을 각각 트리로 정리. 형식:',
+    'DOF 이탈 (Defocus)',
+    '├ 관찰: CD-SEM FEM, 단면 SEM (테이퍼·라운딩·Footing)',
+    '├ 원인: NA=1.32 → DOF≈82nm, 웨이퍼 단차 30nm → 국소 초점 이탈',
+    '└ 해결: CMP 평탄화, Bossung 윈도우 내 운용, 스캐너 포커스 보정',
+    'Watermark',
+    '├ 관찰: PR 표면 얼룩, 국소 CD 변동, 접촉각 저하',
+    '├ 원인: PR 소수성 불충분 → 침지 매질(물) 흡착·잔류',
+    '└ 해결: 소수성 Topcoat 적용, 고소수성 PR 선택, 침지 매질 순환 최적화',
+    '',
+    '【핵심 개념 요약 (공식 포함)】',
+    '꼭 기억해야 할 원리 4가지: ① DOF 공식(k₂·λ/NA²)과 NA-DOF trade-off ② ArF immersion의 유효 파장 단축 원리(λ/n) ③ 웨이퍼 단차와 DOF 마진의 관계 ④ PR 소수성과 Watermark 발생 메커니즘.',
+    '',
+    '【사고 흐름 피드백】',
+    '학생이 맞힌 단계와 틀린 단계, 질문 내용을 근거로 강점과 보완점을 2~3문장으로. 특히 복합 결함을 두 원인으로 분리해 분석했는지, DOF 공식을 활용했는지 짚어주세요.',
+  ].join(NL);
+}
+
+document.getElementById('noteBtn').addEventListener('click', async () => {
+  const b = document.getElementById('noteBtn');
+  const out = document.getElementById('noteOut');
+  b.disabled = true;
+  out.className = 'note-out show';
+  out.innerHTML = `<span class='ai-loading'>Claude가 당신의 학습 기록을 분석하고 있습니다…</span>`;
+  try {
+    const note = await askClaude([{ role: 'user', content: buildNotePrompt() }], NOTE_SYS);
+    lastNote = note;
+    out.textContent = note;
+    document.getElementById('noteActions').style.display = 'flex';
+    b.style.display = 'none';
+  } catch (e) {
+    out.innerHTML = `<span style='color:var(--warn)'>⚠ 분석 노트 생성은 claude.ai 아티팩트 안에서만 작동합니다. 로컬이나 외부 서버에서는 본인 Anthropic API 키가 필요합니다.</span>`;
+    b.disabled = false;
+  }
+});
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+document.getElementById('noteCopyBtn').addEventListener('click', () => {
+  const btn = document.getElementById('noteCopyBtn');
+  if (!lastNote) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(lastNote).catch(() => fallbackCopy(lastNote));
+  } else {
+    fallbackCopy(lastNote);
+  }
+  btn.textContent = '복사됨 ✓';
+  setTimeout(() => { btn.textContent = '복사'; }, 1500);
+});
+
+document.getElementById('noteDownloadBtn').addEventListener('click', () => {
+  if (!lastNote) return;
+  const c = CASES[current];
+  const blob = new Blob([lastNote], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = c.title.replace(/[/:*?<>|]/g, '_') + '_분석노트.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// ANIMATE
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  if (autoRot) rotY += 0.004;
+  group.rotation.x = rotX;
+  group.rotation.y = rotY;
+  group.position.x = panX;
+  group.position.y = panY;
+  renderer.render(scene, camera);
+}
+
+loadCase(0);
+animate();
+</script>
+</body>
+</html>
